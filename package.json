@@ -1,0 +1,36 @@
+{
+    "name": "status-cron",
+    "version": "1.0.0",
+    "description": "cron service to update status of transactions",
+    "exports": "./dist/",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "tests": "jest --coverage",
+        "tests:integration": "echo 'Hello intergation tests'",
+        "lint": "eslint src/**/*.ts",
+        "lint:fix": "eslint --fix ./src/**/*.ts",
+        "build": "tsup",
+        "start": "node --experimental-import-meta-resolve dist/index.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@maticnetwork/chain-indexer-framework": "^1.3.5",
+        "axios": "^1.6.8",
+        "dotenv": "^16.0.1",
+        "ethers": "^6.12.0",
+        "long": "^5.2.0"
+    },
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^5.31.0",
+        "@typescript-eslint/parser": "^5.31.0",
+        "eslint": "^8.20.0",
+        "eslint-config-airbnb-base": "^15.0.0",
+        "eslint-plugin-import": "^2.26.0",
+        "ts-jest": "^29.0.3",
+        "tsup": "^6.2.3",
+        "typescript": "^4.8.2"
+    }
+}
