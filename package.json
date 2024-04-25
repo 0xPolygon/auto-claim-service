@@ -10,8 +10,8 @@
         "tests:integration": "echo 'Hello intergation tests'",
         "lint": "eslint src/**/*.ts",
         "lint:fix": "eslint --fix ./src/**/*.ts",
-        "build": "tsup",
-        "start": "node --experimental-import-meta-resolve dist/index.js"
+        "start": "node src/index.js",
+        "start:dev": "nodemon src/index.js"
     },
     "keywords": [],
     "author": "",
@@ -29,6 +29,7 @@
         "eslint": "^8.20.0",
         "eslint-config-airbnb-base": "^15.0.0",
         "eslint-plugin-import": "^2.26.0",
+        "nodemon": "^3.1.0",
         "ts-jest": "^29.0.3",
         "tsup": "^6.2.3",
         "typescript": "^4.8.2"
