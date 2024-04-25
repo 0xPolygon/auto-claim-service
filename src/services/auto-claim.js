@@ -1,6 +1,7 @@
 import { Logger } from '@maticnetwork/chain-indexer-framework';
 import axios from 'axios';
 import { ethers } from 'ethers';
+import config from '../config/index.js';
 const _GLOBAL_INDEX_MAINNET_FLAG = BigInt(2 ** 64);
 
 /**
@@ -12,18 +13,13 @@ export default class AutoClaimService {
     /**
      * @constructor
      * 
-     * @param {string} transactionUrl 
-     * @param {string} proofUrl
      * @param {ethers.Contract} contract
      */
-    constructor(
-        private transactionUrl: string,
-        private proofUrl: string,
-        private contract: ethers.Contract,
-        private gasStationUrl: string
-    ) { }
+    constructor(contract) {
+        this.contract = contract;
+    }
 
-    async getPendingTransactions(): Promise<any> {
+    async getPendingTransactions() {
         Logger.info({
             location: 'AutoClaimService',
             function: 'getPendingTransactions',
@@ -31,25 +27,35 @@ export default class AutoClaimService {
         })
         let transactions = [];
         try {
-            let transactionData = await axios.get(`${this.transactionUrl}?userAddress=&sourceNetworkIds=2&destinationNetworkIds=1`);
+            let sourceNetworkIds = "";
+            JSON.parse(config.SOURCE_NETWORKS).forEach(networkId => {
+                sourceNetworkIds = `${sourceNetworkIds}&sourceNetworkIds=${networkId}`
+            })
+            let transactionData = await axios.get(
+                `${config.TRANSACTIONS_URL}?userAddress=${sourceNetworkIds}&destinationNetworkIds=${config.DESTINATION_NETWORK}&status=READY_TO_CLAIM`
+            );
             if (transactionData && transactionData.data && transactionData.data.result) {
-                transactions = transactionData.data.result.filter((obj: any) => obj.status === 'READY_TO_CLAIM');
+                transactions = transactionData.data.result;
             }
-        } catch (error: any) {
-            Logger.error({ error: error.message });
+        } catch (error) {
+            Logger.error({
+                location: 'AutoClaimService',
+                function: 'getPendingTransactions',
+                error: error.message
+            });
         }
 
         Logger.info({
             location: 'AutoClaimService',
             function: 'getPendingTransactions',
             call: 'completed',
-            data: transactions.length
+            length: transactions.length
         })
         return transactions;
 
     }
 
-    async getProof(depositCount: number): Promise<any> {
+    async getProof(sourceNetwork, depositCount) {
         Logger.info({
             location: 'AutoClaimService',
             function: 'getProof',
@@ -60,7 +66,7 @@ export default class AutoClaimService {
         })
         let proof = null;
         try {
-            let proofData = await axios.get(`${this.proofUrl}?networkId=${2}&depositCount=${depositCount}`);
+            let proofData = await axios.get(`${config.PROOF_URL}?networkId=${sourceNetwork}&depositCount=${depositCount}`);
             if (
                 proofData && proofData.data && proofData.data.proof &&
                 proofData.data.proof.merkle_proof && !proofData.data.proof.merkle_proof.message
@@ -68,7 +74,11 @@ export default class AutoClaimService {
                 proof = proofData.data.proof;
             }
         } catch (error) {
-            Logger.error({ error });
+            Logger.error({
+                location: 'AutoClaimService',
+                function: 'getProof',
+                error: error.message
+            });
         }
         Logger.info({
             location: 'AutoClaimService',
@@ -78,7 +88,7 @@ export default class AutoClaimService {
         return proof;
     }
 
-    computeGlobalIndex(indexLocal: number, sourceNetworkId: number) {
+    computeGlobalIndex(indexLocal, sourceNetworkId) {
         if (BigInt(sourceNetworkId) === BigInt(0)) {
             return BigInt(indexLocal) + _GLOBAL_INDEX_MAINNET_FLAG;
         } else {
@@ -86,21 +96,25 @@ export default class AutoClaimService {
         }
     }
 
-    async getGasPrice(): Promise<any> {
+    async getGasPrice() {
         try {
-            let price = await axios.get(`${this.gasStationUrl}/zkevm`);
+            let price = await axios.get(`${config.GAS_STATION_URL}/zkevm`);
             if (
                 price && price.data && price.data.fast
             ) {
-                return price.data.fast * (10 ** 9)
+                return price.data.fast * (10 ** 9);
             }
         } catch (error) {
-            Logger.error({ error });
+            Logger.error({
+                location: 'AutoClaimService',
+                function: 'getGasPrice',
+                error: error.message
+            });
             return 2000000000;
         }
     }
 
-    async claimTransactions(): Promise<void> {
+    async claimTransactions() {
         try {
             Logger.info({
                 location: 'AutoClaimService',
@@ -173,7 +187,11 @@ export default class AutoClaimService {
             return;
         }
         catch (error) {
-            Logger.error({ error });
+            Logger.error({
+                location: 'AutoClaimService',
+                function: 'claimTransactions',
+                error: error.message ? error.message : error
+            });
             throw error;
         }
     }
