@@ -3,6 +3,7 @@ import AutoClaimService from "./services/auto-claim.js";
 import { ethers } from 'ethers';
 import config from "./config/index.js";
 import bridgeAbi from "./abi/bridge.js";
+import { schedule } from "node-cron";
 
 Logger.create({
     sentry: {
@@ -32,7 +33,7 @@ async function start() {
 
         const autoClaimService = new AutoClaimService(contract);
 
-        await autoClaimService.claimTransactions();
+        schedule("*/1 * * * *", autoClaimService.claimTransactions.bind(autoClaimService));
     } catch (error) {
         // Logger.error(error as Error);
     }
