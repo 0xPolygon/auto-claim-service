@@ -98,7 +98,7 @@ export default class AutoClaimService {
 
     async getGasPrice() {
         try {
-            let price = await axios.get(`${config.GAS_STATION_URL}/zkevm`);
+            let price = await axios.get(`${config.GAS_STATION_URL}`);
             if (
                 price && price.data && price.data.fast
             ) {
