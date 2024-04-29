@@ -127,7 +127,8 @@ export default class AutoClaimService {
                 Logger.info({
                     type: 'claimAsset',
                     sourceNetwork: transaction.sourceNetwork,
-                    depositIndex: transaction.counter
+                    depositIndex: transaction.counter,
+                    bridgeTxHash: transaction.transactionHash
                 })
                 tx = await this.contract.claimAsset(
                     proof.merkle_proof,
@@ -148,7 +149,8 @@ export default class AutoClaimService {
                 Logger.info({
                     type: 'claimMessage',
                     sourceNetwork: transaction.sourceNetwork,
-                    depositIndex: transaction.counter
+                    depositIndex: transaction.counter,
+                    bridgeTxHash: transaction.transactionHash
                 })
                 tx = await this.contract.claimMessage(
                     proof.merkle_proof,
