@@ -1,12 +1,11 @@
 import axios from 'axios';
+import { INotifyParams } from "../types/index.js";
 
 export default class SlackNotify {
 
-    constructor(slackWebhookUrl) {
-        this.slackWebhookUrl = slackWebhookUrl
-    }
+    constructor(private slackWebhookUrl: string) {}
 
-    async notifyAdmin(params) {
+    async notifyAdmin(params: INotifyParams) {
         await axios.post(this.slackWebhookUrl, {
             blocks: [
                 {

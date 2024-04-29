@@ -5,6 +5,8 @@ import config from "./config/index.js";
 import bridgeAbi from "./abi/bridge.js";
 import { schedule } from "node-cron";
 import SlackNotify from "./services/slack-notify.js";
+import GasStation from "./services/gas-station.js";
+import TransactionService from "./services/transaction.js";
 
 Logger.create({
     sentry: {
@@ -24,7 +26,7 @@ async function start() {
     try {
 
         const provider = new ethers.JsonRpcProvider(config.RPC_URL);
-        const wallet = new ethers.Wallet(config.PRIVATE_KEY, provider);
+        const wallet = new ethers.Wallet(config.PRIVATE_KEY as string, provider);
         
         const contract = new ethers.Contract(
             config.BRIDGE_CONTRACT,
@@ -37,7 +39,16 @@ async function start() {
             slackNotify = new SlackNotify(config.SLACK_URL)
         }
         const autoClaimService = new AutoClaimService(
-            config.NETWORK, contract, slackNotify
+            config.NETWORK as string, 
+            contract,
+            new TransactionService(
+                config.PROOF_URL,
+                config.TRANSACTIONS_URL,
+                config.SOURCE_NETWORKS,
+                config.DESTINATION_NETWORK as string
+            ),
+            new GasStation(config.GAS_STATION_URL),
+            slackNotify
         );
 
         // await autoClaimService.claimTransactions();
