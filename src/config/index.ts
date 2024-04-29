@@ -5,7 +5,7 @@ config();
 export default {
     PRIVATE_KEY: process.env.PRIVATE_KEY,
     SOURCE_NETWORKS: process.env.SOURCE_NETWORKS || '[]',
-    DESTINATION_NETWORK: process.env.DESTINATION_NETWORKS,
+    DESTINATION_NETWORK: process.env.DESTINATION_NETWORK,
     TRANSACTIONS_URL: process.env.TRANSACTIONS_URL || 'https://bridge-api-testnet-dev.polygon.technology/transactions',
     PROOF_URL: process.env.PROOF_URL || 'https://bridge-api-testnet-dev.polygon.technology/merkle-proof',
     RPC_URL: process.env.RPC_URL || 'https://rpc.cardona.zkevm-rpc.com',

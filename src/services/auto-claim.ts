@@ -1,7 +1,10 @@
 import { Logger } from '@maticnetwork/chain-indexer-framework';
-import axios from 'axios';
+import { ITransaction } from '@maticnetwork/bridge-api-common/interfaces/transaction';
 import { ethers } from 'ethers';
-import config from '../config/index.js';
+import SlackNotify from './slack-notify.js';
+import { IProof } from "../types/index.js";
+import GasStation from './gas-station.js';
+import TransactionService from "./transaction.js";
 const _GLOBAL_INDEX_MAINNET_FLAG = BigInt(2 ** 64);
 
 /**
@@ -15,86 +18,15 @@ export default class AutoClaimService {
      * 
      * @param {ethers.Contract} contract
      */
-    constructor(network, contract, slackNotify = null) {
-        this.network = network
-        this.contract = contract;
-        this.slackNotify = slackNotify;
-    }
+    constructor(
+        private network: string,
+        private contract: ethers.Contract,
+        private transactionService: TransactionService,
+        private gasStation: GasStation,
+        private slackNotify: SlackNotify | null = null
+    ) { }
 
-    async getPendingTransactions() {
-        Logger.info({
-            location: 'AutoClaimService',
-            function: 'getPendingTransactions',
-            call: 'started'
-        })
-        let transactions = [];
-        try {
-            let sourceNetworkIds = "";
-            JSON.parse(config.SOURCE_NETWORKS).forEach(networkId => {
-                sourceNetworkIds = `${sourceNetworkIds}&sourceNetworkIds=${networkId}`
-            })
-            let transactionData = await axios.get(
-                `${config.TRANSACTIONS_URL}?userAddress=${sourceNetworkIds}&destinationNetworkIds=${config.DESTINATION_NETWORK}&status=READY_TO_CLAIM`
-            );
-            if (transactionData && transactionData.data && transactionData.data.result) {
-                transactions = transactionData.data.result;
-            }
-        } catch (error) {
-            Logger.error({
-                location: 'AutoClaimService',
-                function: 'getPendingTransactions',
-                error: error.message
-            });
-        }
-
-        Logger.info({
-            location: 'AutoClaimService',
-            function: 'getPendingTransactions',
-            call: 'completed',
-            length: transactions.length
-        })
-        return transactions;
-
-    }
-
-    async getProof(sourceNetwork, depositCount) {
-        Logger.info({
-            location: 'AutoClaimService',
-            function: 'getProof',
-            call: 'started',
-            data: {
-                depositCount
-            }
-        })
-        let proof = null;
-        try {
-            let proofData = await axios.get(`${config.PROOF_URL}?networkId=${sourceNetwork}&depositCount=${depositCount}`);
-            if (
-                proofData && proofData.data && proofData.data.proof &&
-                proofData.data.proof.merkle_proof && !proofData.data.proof.merkle_proof.message
-            ) {
-                proof = proofData.data.proof;
-            }
-        } catch (error) {
-            Logger.error({
-                location: 'AutoClaimService',
-                function: 'getProof',
-                error: error.message,
-                data: {
-                    sourceNetwork,
-                    depositCount
-                }
-            });
-        }
-        Logger.info({
-            location: 'AutoClaimService',
-            function: 'getProof',
-            call: 'completed'
-        })
-        return proof;
-    }
-
-    computeGlobalIndex(indexLocal, sourceNetworkId) {
+    computeGlobalIndex(indexLocal: number, sourceNetworkId: number): BigInt {
         if (BigInt(sourceNetworkId) === BigInt(0)) {
             return BigInt(indexLocal) + _GLOBAL_INDEX_MAINNET_FLAG;
         } else {
@@ -102,26 +34,8 @@ export default class AutoClaimService {
         }
     }
 
-    async getGasPrice() {
-        try {
-            let price = await axios.get(`${config.GAS_STATION_URL}`);
-            if (
-                price && price.data && price.data.fast
-            ) {
-                return price.data.fast * (10 ** 9);
-            }
-        } catch (error) {
-            Logger.error({
-                location: 'AutoClaimService',
-                function: 'getGasPrice',
-                error: error.message
-            });
-            return 2000000000;
-        }
-    }
-
-    async claim(transaction, proof, globalIndex, gasPrice) {
-        let tx = null;
+    async claim(transaction: ITransaction, proof: IProof, globalIndex: BigInt, gasPrice: number): Promise<ethers.TransactionResponse | null> {
+        let tx: ethers.TransactionResponse | null = null;
         try {
             if (transaction.dataType === 'ERC20') {
                 Logger.info({
@@ -140,7 +54,7 @@ export default class AutoClaimService {
                     transaction.originTokenAddress,
                     transaction.destinationNetwork,
                     transaction.receiver,
-                    transaction.amounts[0],
+                    transaction.amounts ? transaction.amounts[0] : '0',
                     transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
                     { gasPrice }
                 )
@@ -162,7 +76,7 @@ export default class AutoClaimService {
                     transaction.transactionInitiator,
                     transaction.destinationNetwork,
                     transaction.receiver,
-                    transaction.originTokenAddress ? '0' : transaction.amounts[0],
+                    transaction.originTokenAddress ? '0' : transaction.amounts ? transaction.amounts[0] : '0',
                     transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
                     { gasPrice }
                 )
@@ -180,24 +94,24 @@ export default class AutoClaimService {
                 function: 'claimTransactions',
                 call: 'started'
             })
-            const transactions = await this.getPendingTransactions();
+            const transactions = await this.transactionService.getPendingTransactions();
 
             for (const transaction of transactions) {
-                const proof = await this.getProof(transaction.sourceNetwork, transaction.counter)
-                const globalIndex = this.computeGlobalIndex(transaction.counter, transaction.sourceNetwork);
-                const gasPrice = await this.getGasPrice();
+                const proof = await this.transactionService.getProof(transaction.sourceNetwork, transaction.counter as number)
+                const globalIndex = this.computeGlobalIndex(transaction.counter as number, transaction.sourceNetwork);
+                const gasPrice = await this.gasStation.getGasPrice();
                 if (proof) {
                     let tx = await this.claim(transaction, proof, globalIndex, gasPrice);
 
                     if (tx && this.slackNotify) {
                         await this.slackNotify.notifyAdmin({
                             network: this.network,
-                            claimType: transaction.dataType,
-                            bridgeTxHash: transaction.transactionHash,
+                            claimType: transaction.dataType as string,
+                            bridgeTxHash: transaction.transactionHash as string,
                             sourceNetwork: transaction.sourceNetwork,
                             destinationNetwork: transaction.destinationNetwork,
                             claimTxHash: tx.hash,
-                            depositIndex: transaction.counter
+                            depositIndex: transaction.counter as number
                         });
 
                         Logger.info({
@@ -217,7 +131,7 @@ export default class AutoClaimService {
             })
             return;
         }
-        catch (error) {
+        catch (error: any) {
             Logger.error({
                 location: 'AutoClaimService',
                 function: 'claimTransactions',
