@@ -15,8 +15,10 @@ export default class AutoClaimService {
      * 
      * @param {ethers.Contract} contract
      */
-    constructor(contract) {
+    constructor(network, contract, slackNotify = null) {
+        this.network = network
         this.contract = contract;
+        this.slackNotify = slackNotify;
     }
 
     async getPendingTransactions() {
@@ -77,7 +79,11 @@ export default class AutoClaimService {
             Logger.error({
                 location: 'AutoClaimService',
                 function: 'getProof',
-                error: error.message
+                error: error.message,
+                data: {
+                    sourceNetwork,
+                    depositCount
+                }
             });
         }
         Logger.info({
@@ -114,6 +120,57 @@ export default class AutoClaimService {
         }
     }
 
+    async claim(transaction, proof, globalIndex, gasPrice) {
+        let tx = null;
+        try {
+            if (transaction.dataType === 'ERC20') {
+                Logger.info({
+                    type: 'claimAsset',
+                    sourceNetwork: transaction.sourceNetwork,
+                    depositIndex: transaction.counter
+                })
+                tx = await this.contract.claimAsset(
+                    proof.merkle_proof,
+                    proof.rollup_merkle_proof,
+                    globalIndex.toString(),
+                    proof.main_exit_root,
+                    proof.rollup_exit_root,
+                    transaction.originTokenNetwork,
+                    transaction.originTokenAddress,
+                    transaction.destinationNetwork,
+                    transaction.receiver,
+                    transaction.amounts[0],
+                    transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
+                    { gasPrice }
+                )
+
+            } else {
+                Logger.info({
+                    type: 'claimMessage',
+                    sourceNetwork: transaction.sourceNetwork,
+                    depositIndex: transaction.counter
+                })
+                tx = await this.contract.claimMessage(
+                    proof.merkle_proof,
+                    proof.rollup_merkle_proof,
+                    globalIndex.toString(),
+                    proof.main_exit_root,
+                    proof.rollup_exit_root,
+                    '0',
+                    transaction.transactionInitiator,
+                    transaction.destinationNetwork,
+                    transaction.receiver,
+                    transaction.originTokenAddress ? '0' : transaction.amounts[0],
+                    transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
+                    { gasPrice }
+                )
+            }
+        } catch (error) {
+            Logger.error({ error })
+        }
+        return tx;
+    }
+
     async claimTransactions() {
         try {
             Logger.info({
@@ -124,55 +181,27 @@ export default class AutoClaimService {
             const transactions = await this.getPendingTransactions();
 
             for (const transaction of transactions) {
-                const proof = await this.getProof(transaction.counter)
+                const proof = await this.getProof(transaction.sourceNetwork, transaction.counter)
                 const globalIndex = this.computeGlobalIndex(transaction.counter, transaction.sourceNetwork);
                 const gasPrice = await this.getGasPrice();
                 if (proof) {
-                    if (transaction.dataType === 'ERC20') {
-                        Logger.info({
-                            type: 'claimAsset',
+                    let tx = await this.claim(transaction, proof, globalIndex, gasPrice);
+
+                    if (tx && this.slackNotify) {
+                        await this.slackNotify.notifyAdmin({
+                            network: this.network,
+                            claimType: transaction.dataType,
+                            bridgeTxHash: transaction.transactionHash,
+                            sourceNetwork: transaction.sourceNetwork,
+                            destinationNetwork: transaction.destinationNetwork,
+                            claimTxHash: tx.hash,
                             depositIndex: transaction.counter
-                        })
-                        const tx = await this.contract.claimAsset(
-                            proof.merkle_proof,
-                            proof.rollup_merkle_proof,
-                            globalIndex.toString(),
-                            proof.main_exit_root,
-                            proof.rollup_exit_root,
-                            transaction.originTokenNetwork,
-                            transaction.originTokenAddress,
-                            transaction.destinationNetwork,
-                            transaction.receiver,
-                            transaction.amounts[0],
-                            transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
-                            { gasPrice }
-                        )
+                        });
+
                         Logger.info({
                             type: 'transactionCompleted',
-                            hash: tx.hash,
-                            depositIndex: transaction.counter
-                        })
-                    } else {
-                        Logger.info({
-                            type: 'claimMessage',
-                            depositIndex: transaction.counter
-                        })
-                        const tx = await this.contract.claimMessage(
-                            proof.merkle_proof,
-                            proof.rollup_merkle_proof,
-                            globalIndex,
-                            proof.main_exit_root,
-                            proof.rollup_exit_root,
-                            '0',
-                            transaction.transactionInitiator,
-                            transaction.destinationNetwork,
-                            transaction.receiver,
-                            transaction.originTokenAddress ? '0' : transaction.amounts[0],
-                            transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
-                            { gasPrice }
-                        )
-                        Logger.info({
-                            type: 'transactionCompleted',
+                            bridgeTxHash: transaction.transactionHash,
+                            sourceNetwork: transaction.sourceNetwork,
                             hash: tx.hash,
                             depositIndex: transaction.counter
                         })

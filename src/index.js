@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import config from "./config/index.js";
 import bridgeAbi from "./abi/bridge.js";
 import { schedule } from "node-cron";
+import SlackNotify from "./services/slack-notify.js";
 
 Logger.create({
     sentry: {
@@ -24,18 +25,25 @@ async function start() {
 
         const provider = new ethers.JsonRpcProvider(config.RPC_URL);
         const wallet = new ethers.Wallet(config.PRIVATE_KEY, provider);
-
+        
         const contract = new ethers.Contract(
             config.BRIDGE_CONTRACT,
             bridgeAbi,
             wallet
         );
+        
+        let slackNotify = null;
+        if (config.SLACK_URL) {
+            slackNotify = new SlackNotify(config.SLACK_URL)
+        }
+        const autoClaimService = new AutoClaimService(
+            config.NETWORK, contract, slackNotify
+        );
 
-        const autoClaimService = new AutoClaimService(contract);
-
+        // await autoClaimService.claimTransactions();
         schedule("*/1 * * * *", autoClaimService.claimTransactions.bind(autoClaimService));
     } catch (error) {
-        // Logger.error(error as Error);
+        // Logger.error({ error });
     }
 };
 
