@@ -2,7 +2,7 @@ name: Auto Claim Deployment
 on:
   push:
     branches:
-      - DEVOPS-2801-auto-claim-deployment
+      - main
   workflow_dispatch:
     inputs:
       environment:
