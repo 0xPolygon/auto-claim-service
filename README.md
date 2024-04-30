@@ -16,12 +16,12 @@ npm install
 
 ## Running
 
+- Build using 
+```bash
+npm run build
+```
+
 - Start the server using 
 ```bash
 npm run start
-```
-
-- Start the server using nodemon
-```bash
-npm run start:dev
 ```
