@@ -10,5 +10,5 @@ RUN apt-get update || : && apt-get install -y \
 COPY . .
 RUN npm install
 RUN npm run build
-EXPOSE 80
 WORKDIR /app
+CMD ["node", "dist/index.js"]
