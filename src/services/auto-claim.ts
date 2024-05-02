@@ -81,7 +81,18 @@ export default class AutoClaimService {
                     { gasPrice }
                 )
             }
-        } catch (error) {
+        } catch (error: any) {
+            if (this.slackNotify) {
+                await this.slackNotify.notifyAdminForError({
+                    network: this.network,
+                    claimType: transaction.dataType as string,
+                    bridgeTxHash: transaction.transactionHash as string,
+                    sourceNetwork: transaction.sourceNetwork,
+                    destinationNetwork: transaction.destinationNetwork,
+                    error: error.message ? error.message : JSON.stringify(error),
+                    depositIndex: transaction.counter as number
+                });
+            }
             Logger.error({ error })
         }
         return tx;
@@ -104,15 +115,7 @@ export default class AutoClaimService {
                     let tx = await this.claim(transaction, proof, globalIndex, gasPrice);
 
                     if (tx && this.slackNotify) {
-                        await this.slackNotify.notifyAdmin({
-                            network: this.network,
-                            claimType: transaction.dataType as string,
-                            bridgeTxHash: transaction.transactionHash as string,
-                            sourceNetwork: transaction.sourceNetwork,
-                            destinationNetwork: transaction.destinationNetwork,
-                            claimTxHash: tx.hash,
-                            depositIndex: transaction.counter as number
-                        });
+                        await this.slackNotify.notifyAdminForSuccess(tx.hash);
 
                         Logger.info({
                             type: 'transactionCompleted',
