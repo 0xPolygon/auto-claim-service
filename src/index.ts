@@ -2,7 +2,7 @@ import { Logger } from "@maticnetwork/chain-indexer-framework/logger";
 import AutoClaimService from "./services/auto-claim.js";
 import { ethers } from 'ethers';
 import config from "./config/index.js";
-import bridgeAbi from "./abi/bridge.js";
+import claimCompressorAbi from "./abi/claim_compressor.js";
 import SlackNotify from "./services/slack-notify.js";
 import GasStation from "./services/gas-station.js";
 import TransactionService from "./services/transaction.js";
@@ -36,8 +36,8 @@ async function start() {
         const wallet = new ethers.Wallet(config.PRIVATE_KEY as string, provider);
 
         const contract = new ethers.Contract(
-            config.BRIDGE_CONTRACT as string,
-            bridgeAbi,
+            config.CLAIM_COMPRESSOR_CONTRACT as string,
+            claimCompressorAbi,
             wallet
         );
 

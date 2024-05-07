@@ -34,53 +34,43 @@ export default class AutoClaimService {
         }
     }
 
-    async claim(transaction: ITransaction, proof: IProof, globalIndex: BigInt, gasPrice: number): Promise<ethers.TransactionResponse | null> {
-        let tx: ethers.TransactionResponse | null = null;
+    async estimateGas(transaction: ITransaction, proof: IProof, globalIndex: BigInt): Promise<boolean> {
         try {
             if (transaction.dataType === 'ERC20') {
-                Logger.info({
-                    type: 'claimAsset',
-                    sourceNetwork: transaction.sourceNetwork,
-                    depositIndex: transaction.counter,
-                    bridgeTxHash: transaction.transactionHash
-                })
-                tx = await this.contract.claimAsset(
-                    proof.merkle_proof,
-                    proof.rollup_merkle_proof,
-                    globalIndex.toString(),
+                await this.contract.estimateGas.compressClaimCall(
                     proof.main_exit_root,
                     proof.rollup_exit_root,
-                    transaction.originTokenNetwork,
-                    transaction.originTokenAddress,
-                    transaction.destinationNetwork,
-                    transaction.receiver,
-                    transaction.amounts ? transaction.amounts[0] : '0',
-                    transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
-                    { gasPrice }
+                    [{
+                        SmtProofLocalExitRoot: proof.merkle_proof,
+                        SmtProofRollupExitRoot: proof.rollup_merkle_proof,
+                        GlobalIndex: globalIndex.toString(),
+                        OriginNetwork: transaction.originTokenNetwork,
+                        OriginAddress: transaction.originTokenAddress,
+                        DestinationAddress: transaction.receiver,
+                        Amount: transaction.amounts ? transaction.amounts[0] : '0',
+                        Metadata: transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
+                        IsMessage: false
+                    }]
                 )
 
             } else {
-                Logger.info({
-                    type: 'claimMessage',
-                    sourceNetwork: transaction.sourceNetwork,
-                    depositIndex: transaction.counter,
-                    bridgeTxHash: transaction.transactionHash
-                })
-                tx = await this.contract.claimMessage(
-                    proof.merkle_proof,
-                    proof.rollup_merkle_proof,
-                    globalIndex.toString(),
+                await this.contract.estimateGas.compressClaimCall(
                     proof.main_exit_root,
                     proof.rollup_exit_root,
-                    '0',
-                    transaction.transactionInitiator,
-                    transaction.destinationNetwork,
-                    transaction.receiver,
-                    transaction.originTokenAddress ? '0' : transaction.amounts ? transaction.amounts[0] : '0',
-                    transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
-                    { gasPrice }
+                    [{
+                        SmtProofLocalExitRoot: proof.merkle_proof,
+                        SmtProofRollupExitRoot: proof.rollup_merkle_proof,
+                        GlobalIndex: globalIndex.toString(),
+                        OriginNetwork: '0',
+                        OriginAddress: transaction.transactionInitiator,
+                        DestinationAddress: transaction.receiver,
+                        Amount: transaction.originTokenAddress ? '0' : transaction.amounts ? transaction.amounts[0] : '0',
+                        Metadata: transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
+                        IsMessage: true
+                    }]
                 )
             }
+            return true;
         } catch (error: any) {
             if (this.slackNotify) {
                 await this.slackNotify.notifyAdminForError({
@@ -93,6 +83,63 @@ export default class AutoClaimService {
                     depositIndex: transaction.counter as number
                 });
             }
+            return false;
+        }
+    }
+
+    async claim(batch: { transaction: ITransaction, proof: IProof, globalIndex: BigInt }[]): Promise<ethers.TransactionResponse | null> {
+        const gasPrice = await this.gasStation.getGasPrice();
+        let tx: ethers.TransactionResponse | null = null;
+        try {
+            Logger.info({
+                type: 'claimBatch',
+                transactionHashes: batch.map(obj => obj.transaction.transactionHash)
+            })
+
+            const main_exit_root = batch[0].proof.main_exit_root;
+            const rollup_exit_root = batch[0].proof.rollup_exit_root;
+            const data = []
+            for (const tx of batch) {
+                if (tx.transaction.dataType === 'ERC20') {
+                    data.push({
+                        SmtProofLocalExitRoot: tx.proof.merkle_proof,
+                        SmtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
+                        GlobalIndex: tx.globalIndex.toString(),
+                        OriginNetwork: tx.transaction.originTokenNetwork,
+                        OriginAddress: tx.transaction.originTokenAddress,
+                        DestinationAddress: tx.transaction.receiver,
+                        Amount: tx.transaction.amounts ? tx.transaction.amounts[0] : '0',
+                        Metadata: tx.transaction.metadata && tx.transaction.metadata !== "" ? tx.transaction.metadata : '0x',
+                        IsMessage: false
+                    })
+                } else {
+                    data.push({
+                        SmtProofLocalExitRoot: tx.proof.merkle_proof,
+                        SmtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
+                        GlobalIndex: tx.globalIndex.toString(),
+                        OriginNetwork: '0',
+                        OriginAddress: tx.transaction.transactionInitiator,
+                        DestinationAddress: tx.transaction.receiver,
+                        Amount: tx.transaction.originTokenAddress ? '0' : tx.transaction.amounts ? tx.transaction.amounts[0] : '0',
+                        Metadata: tx.transaction.metadata && tx.transaction.metadata !== "" ? tx.transaction.metadata : '0x',
+                        IsMessage: true
+                    })
+                }
+            }
+
+            const transaction = await this.contract.compressClaimCall(
+                main_exit_root,
+                rollup_exit_root,
+                data,
+                { gasPrice }
+            )
+            
+            Logger.info({
+                type: 'claimBatch',
+                status: 'success',
+                claimTransactionHash: transaction.hash
+            })
+        } catch (error: any) {
             Logger.error({ error })
         }
         return tx;
@@ -107,26 +154,35 @@ export default class AutoClaimService {
             })
             const transactions = await this.transactionService.getPendingTransactions();
 
+            let finalClaimableTransaction = [];
             for (const transaction of transactions) {
                 const proof = await this.transactionService.getProof(transaction.sourceNetwork, transaction.counter as number)
                 const globalIndex = this.computeGlobalIndex(transaction.counter as number, transaction.sourceNetwork);
-                const gasPrice = await this.gasStation.getGasPrice();
+
                 if (proof) {
-                    let tx = await this.claim(transaction, proof, globalIndex, gasPrice);
-
-                    if (tx && this.slackNotify) {
-                        await this.slackNotify.notifyAdminForSuccess(tx.hash);
-
-                        Logger.info({
-                            type: 'transactionCompleted',
-                            bridgeTxHash: transaction.transactionHash,
-                            sourceNetwork: transaction.sourceNetwork,
-                            hash: tx.hash,
-                            depositIndex: transaction.counter
+                    let estimateGas = await this.estimateGas(transaction, proof, globalIndex);
+                    if (estimateGas) {
+                        finalClaimableTransaction.push({
+                            transaction,
+                            proof,
+                            globalIndex
                         })
                     }
                 }
             }
+
+            const length = finalClaimableTransaction.length;
+            for (let i = 0; i < length; i += 5) {
+                const batch = finalClaimableTransaction.slice(i, i + 5);
+                await this.claim(batch);
+            }
+
+            const remaining = length % 5;
+            if (remaining > 0) {
+                const lastBatch = finalClaimableTransaction.slice(-remaining);
+                await this.claim(lastBatch);
+            }
+
             Logger.info({
                 location: 'AutoClaimService',
                 function: 'claimTransactions',
