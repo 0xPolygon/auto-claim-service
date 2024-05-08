@@ -10,6 +10,8 @@ export default class TransactionService {
         private transactionUrl: string,
         private sourceNetworks: string,
         private destinationNetwork: string,
+        private transactionApiKey: string | undefined,
+        private proofApiKey: string | undefined,
     ) { }
 
     async getPendingTransactions(): Promise<ITransaction[]> {
@@ -24,8 +26,15 @@ export default class TransactionService {
             JSON.parse(this.sourceNetworks).forEach((networkId: number) => {
                 sourceNetworkIds = `${sourceNetworkIds}&sourceNetworkIds=${networkId}`
             })
+            let headers = {};
+            if (this.transactionApiKey) {
+                headers = {
+                    'x-access-token': this.transactionApiKey
+                }
+            }
             let transactionData = await axios.get(
-                `${this.transactionUrl}?userAddress=${sourceNetworkIds}&destinationNetworkIds=${this.destinationNetwork}&status=READY_TO_CLAIM`
+                `${this.transactionUrl}?userAddress=${sourceNetworkIds}&destinationNetworkIds=${this.destinationNetwork}&status=READY_TO_CLAIM`,
+                { headers }
             );
             if (transactionData && transactionData.data && transactionData.data.result) {
                 transactions = transactionData.data.result;
@@ -59,7 +68,16 @@ export default class TransactionService {
         })
         let proof: IProof | null = null;
         try {
-            let proofData = await axios.get(`${this.proofUrl}?networkId=${sourceNetwork}&depositCount=${depositCount}`);
+            let headers = {};
+            if (this.proofApiKey) {
+                headers = {
+                    'x-access-token': this.proofApiKey
+                }
+            }
+            let proofData = await axios.get(
+                `${this.proofUrl}?networkId=${sourceNetwork}&depositCount=${depositCount}`,
+                { headers }
+            );
             if (
                 proofData && proofData.data && proofData.data.proof &&
                 proofData.data.proof.merkle_proof && !proofData.data.proof.merkle_proof.message

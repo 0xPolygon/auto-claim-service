@@ -3,9 +3,9 @@ import { INotifyParams } from "../types/index.js";
 
 export default class SlackNotify {
 
-    constructor(private slackWebhookUrl: string) {}
+    constructor(private slackWebhookUrl: string) { }
 
-    async notifyAdmin(params: INotifyParams) {
+    async notifyAdminForError(params: INotifyParams) {
         await axios.post(this.slackWebhookUrl, {
             blocks: [
                 {
@@ -47,14 +47,31 @@ export default class SlackNotify {
                     type: "section",
                     text: {
                         type: "mrkdwn",
-                        text: "*claimTxHash:* " + params.claimTxHash,
+                        text: "*depositIndex:* " + params.depositIndex,
                     },
                 },
                 {
                     type: "section",
                     text: {
                         type: "mrkdwn",
-                        text: "*depositIndex:* " + params.depositIndex,
+                        text: "*Error:* " + params.error,
+                    },
+                },
+                {
+                    type: "divider"
+                },
+            ],
+        });
+    }
+
+    async notifyAdminForSuccess(claimTxHash: string) {
+        await axios.post(this.slackWebhookUrl, {
+            blocks: [
+                {
+                    type: "section",
+                    text: {
+                        type: "mrkdwn",
+                        text: "*transactionHash:* " + claimTxHash,
                     },
                 },
                 {
