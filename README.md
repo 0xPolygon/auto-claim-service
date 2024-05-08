@@ -2,8 +2,7 @@
 
 ## Introduction
 
-The Auto Claim script is the script which runs on cron job to claim the transactions on particular destination
-chain in LXLY bridge.
+Autoclaim Script is a cront job service which is used to process the claim transactions for the bridge transactions initiated on the lxly bridge. Bridging involves two steps. 1st Step is done on the source chain and the second on the destination chain, The script automates the second step so that users don't have to manually execute this second step. It fetches the transaction details from the transaction list endpoint of the Bridge API service, gets the merkle proof payload for each bridge transaction and then submits the claim transaction on the destination chain. 
 
 ## Prerequisite
 
@@ -13,6 +12,9 @@ chain in LXLY bridge.
 ```bash
 npm install
 ```
+
+- You can host the gas price estimation service for your chain by following the instructions on this repo: https://github.com/maticnetwork/maticgasstation
+
 
 ## Running
 
