@@ -35,41 +35,44 @@ export default class AutoClaimService {
     }
 
     async estimateGas(transaction: ITransaction, proof: IProof, globalIndex: BigInt): Promise<boolean> {
+        let compressedClaimCalls = null;
         try {
             if (transaction.dataType === 'ERC20') {
-                await this.contract.estimateGas.compressClaimCall(
+                compressedClaimCalls = await this.contract.compressClaimCall(
                     proof.main_exit_root,
                     proof.rollup_exit_root,
                     [{
-                        SmtProofLocalExitRoot: proof.merkle_proof,
-                        SmtProofRollupExitRoot: proof.rollup_merkle_proof,
-                        GlobalIndex: globalIndex.toString(),
-                        OriginNetwork: transaction.originTokenNetwork,
-                        OriginAddress: transaction.originTokenAddress,
-                        DestinationAddress: transaction.receiver,
-                        Amount: transaction.amounts ? transaction.amounts[0] : '0',
-                        Metadata: transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
-                        IsMessage: false
+                        smtProofLocalExitRoot: proof.merkle_proof,
+                        smtProofRollupExitRoot: proof.rollup_merkle_proof,
+                        globalIndex: globalIndex.toString(),
+                        originNetwork: transaction.originTokenNetwork,
+                        originAddress: transaction.originTokenAddress,
+                        destinationAddress: transaction.receiver,
+                        amount: transaction.amounts ? transaction.amounts[0] : '0',
+                        metadata: transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
+                        isMessage: false
                     }]
                 )
-
+                
             } else {
-                await this.contract.estimateGas.compressClaimCall(
+                compressedClaimCalls = await this.contract.compressClaimCall.estimateGas(
                     proof.main_exit_root,
                     proof.rollup_exit_root,
                     [{
-                        SmtProofLocalExitRoot: proof.merkle_proof,
-                        SmtProofRollupExitRoot: proof.rollup_merkle_proof,
-                        GlobalIndex: globalIndex.toString(),
-                        OriginNetwork: '0',
-                        OriginAddress: transaction.transactionInitiator,
-                        DestinationAddress: transaction.receiver,
-                        Amount: transaction.originTokenAddress ? '0' : transaction.amounts ? transaction.amounts[0] : '0',
-                        Metadata: transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
-                        IsMessage: true
+                        smtProofLocalExitRoot: proof.merkle_proof,
+                        smtProofRollupExitRoot: proof.rollup_merkle_proof,
+                        globalIndex: globalIndex.toString(),
+                        originNetwork: '0',
+                        originAddress: transaction.transactionInitiator,
+                        destinationAddress: transaction.receiver,
+                        amount: transaction.originTokenAddress ? '0' : transaction.amounts ? transaction.amounts[0] : '0',
+                        metadata: transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
+                        isMessage: true
                     }]
                 )
             }
+
+            await this.contract.sendCompressedClaims.estimateGas(compressedClaimCalls);
             return true;
         } catch (error: any) {
             if (this.slackNotify) {
@@ -89,7 +92,7 @@ export default class AutoClaimService {
 
     async claim(batch: { transaction: ITransaction, proof: IProof, globalIndex: BigInt }[]): Promise<ethers.TransactionResponse | null> {
         const gasPrice = await this.gasStation.getGasPrice();
-        let tx: ethers.TransactionResponse | null = null;
+        let response: ethers.TransactionResponse | null = null;
         try {
             Logger.info({
                 type: 'claimBatch',
@@ -102,47 +105,48 @@ export default class AutoClaimService {
             for (const tx of batch) {
                 if (tx.transaction.dataType === 'ERC20') {
                     data.push({
-                        SmtProofLocalExitRoot: tx.proof.merkle_proof,
-                        SmtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
-                        GlobalIndex: tx.globalIndex.toString(),
-                        OriginNetwork: tx.transaction.originTokenNetwork,
-                        OriginAddress: tx.transaction.originTokenAddress,
-                        DestinationAddress: tx.transaction.receiver,
-                        Amount: tx.transaction.amounts ? tx.transaction.amounts[0] : '0',
-                        Metadata: tx.transaction.metadata && tx.transaction.metadata !== "" ? tx.transaction.metadata : '0x',
-                        IsMessage: false
+                        smtProofLocalExitRoot: tx.proof.merkle_proof,
+                        smtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
+                        globalIndex: tx.globalIndex.toString(),
+                        originNetwork: tx.transaction.originTokenNetwork,
+                        originAddress: tx.transaction.originTokenAddress,
+                        destinationAddress: tx.transaction.receiver,
+                        amount: tx.transaction.amounts ? tx.transaction.amounts[0] : '0',
+                        metadata: tx.transaction.metadata && tx.transaction.metadata !== "" ? tx.transaction.metadata : '0x',
+                        isMessage: false
                     })
                 } else {
                     data.push({
-                        SmtProofLocalExitRoot: tx.proof.merkle_proof,
-                        SmtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
-                        GlobalIndex: tx.globalIndex.toString(),
-                        OriginNetwork: '0',
-                        OriginAddress: tx.transaction.transactionInitiator,
-                        DestinationAddress: tx.transaction.receiver,
-                        Amount: tx.transaction.originTokenAddress ? '0' : tx.transaction.amounts ? tx.transaction.amounts[0] : '0',
-                        Metadata: tx.transaction.metadata && tx.transaction.metadata !== "" ? tx.transaction.metadata : '0x',
-                        IsMessage: true
+                        smtProofLocalExitRoot: tx.proof.merkle_proof,
+                        smtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
+                        globalIndex: tx.globalIndex.toString(),
+                        originNetwork: '0',
+                        originAddress: tx.transaction.transactionInitiator,
+                        destinationAddress: tx.transaction.receiver,
+                        amount: tx.transaction.originTokenAddress ? '0' : tx.transaction.amounts ? tx.transaction.amounts[0] : '0',
+                        metadata: tx.transaction.metadata && tx.transaction.metadata !== "" ? tx.transaction.metadata : '0x',
+                        isMessage: true
                     })
                 }
             }
 
-            const transaction = await this.contract.compressClaimCall(
+            response = await this.contract.compressClaimCall(
                 main_exit_root,
                 rollup_exit_root,
                 data,
                 { gasPrice }
             )
+            response = await this.contract.sendCompressedClaims(response)
             
             Logger.info({
                 type: 'claimBatch',
                 status: 'success',
-                claimTransactionHash: transaction.hash
+                claimTransactionHash: response?.hash
             })
         } catch (error: any) {
             Logger.error({ error })
         }
-        return tx;
+        return response;
     }
 
     async claimTransactions() {
@@ -175,12 +179,6 @@ export default class AutoClaimService {
             for (let i = 0; i < length; i += 5) {
                 const batch = finalClaimableTransaction.slice(i, i + 5);
                 await this.claim(batch);
-            }
-
-            const remaining = length % 5;
-            if (remaining > 0) {
-                const lastBatch = finalClaimableTransaction.slice(-remaining);
-                await this.claim(lastBatch);
             }
 
             Logger.info({
