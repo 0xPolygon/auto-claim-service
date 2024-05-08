@@ -127,7 +127,7 @@ export default class AutoClaimService {
             Logger.info({
                 location: 'AutoClaimService',
                 function: 'claimTransactions',
-                call: 'compelted'
+                call: 'completed'
             })
             return;
         }
