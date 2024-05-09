@@ -4,7 +4,7 @@ export interface INotifyParams {
     bridgeTxHash: string
     sourceNetwork: number
     destinationNetwork: number
-    claimTxHash: string
+    error: string
     depositIndex: number
 }
 
