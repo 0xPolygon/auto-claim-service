@@ -2,7 +2,7 @@ name: Auto Claim Deployment
 on:
   push:
     branches:
-      - main
+      - batch-claim
   workflow_dispatch:
     inputs:
       environment:
