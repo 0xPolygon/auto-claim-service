@@ -13,13 +13,14 @@ export default class GasStation {
             ) {
                 return price.data.fast * (10 ** 9);
             }
+            throw new Error("something went wront while calculating gasPrice")
         } catch (error: any) {
             Logger.error({
                 location: 'AutoClaimService',
                 function: 'getGasPrice',
                 error: error.message
             });
+            throw error;
         }
-        return 2000000000;
     }
 }

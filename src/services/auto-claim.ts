@@ -55,7 +55,7 @@ export default class AutoClaimService {
                 )
                 
             } else {
-                compressedClaimCalls = await this.contract.compressClaimCall.estimateGas(
+                compressedClaimCalls = await this.contract.compressClaimCall(
                     proof.main_exit_root,
                     proof.rollup_exit_root,
                     [{
