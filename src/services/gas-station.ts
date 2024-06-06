@@ -16,7 +16,7 @@ export default class GasStation {
             throw new Error("something went wront while calculating gasPrice")
         } catch (error: any) {
             Logger.error({
-                location: 'AutoClaimService',
+                location: 'GasStation',
                 function: 'getGasPrice',
                 error: error.message
             });

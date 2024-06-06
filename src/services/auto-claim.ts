@@ -16,13 +16,21 @@ export default class AutoClaimService {
     /**
      * @constructor
      * 
-     * @param {ethers.Contract} contract
+     * @param {string} network
+     * @param {ethers.Contract} compressContract
+     * @param {ethers.Contract} bridgeContract
+     * @param {TransactionService} transactionService
+     * @param {GasStation} gasStation
+     * @param {string} destinationNetwork
+     * @param {SlackNotify | null} slackNotify
      */
     constructor(
         private network: string,
-        private contract: ethers.Contract,
+        private compressContract: ethers.Contract,
+        private bridgeContract: ethers.Contract,
         private transactionService: TransactionService,
         private gasStation: GasStation,
+        private destinationNetwork: string,
         private slackNotify: SlackNotify | null = null
     ) { }
 
@@ -35,44 +43,37 @@ export default class AutoClaimService {
     }
 
     async estimateGas(transaction: ITransaction, proof: IProof, globalIndex: BigInt): Promise<boolean> {
-        let compressedClaimCalls = null;
         try {
             if (transaction.dataType === 'ERC20') {
-                compressedClaimCalls = await this.contract.compressClaimCall(
+                await this.bridgeContract.claimAsset.estimateGas(
+                    proof.merkle_proof,
+                    proof.rollup_merkle_proof,
+                    globalIndex.toString(),
                     proof.main_exit_root,
                     proof.rollup_exit_root,
-                    [{
-                        smtProofLocalExitRoot: proof.merkle_proof,
-                        smtProofRollupExitRoot: proof.rollup_merkle_proof,
-                        globalIndex: globalIndex.toString(),
-                        originNetwork: transaction.originTokenNetwork,
-                        originAddress: transaction.originTokenAddress,
-                        destinationAddress: transaction.receiver,
-                        amount: transaction.amounts ? transaction.amounts[0] : '0',
-                        metadata: transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
-                        isMessage: false
-                    }]
+                    transaction.originTokenNetwork,
+                    transaction.originTokenAddress,
+                    this.destinationNetwork,
+                    transaction.receiver,
+                    transaction.amounts ? transaction.amounts[0] : '0',
+                    transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x'
                 )
-                
             } else {
-                compressedClaimCalls = await this.contract.compressClaimCall(
+                await this.bridgeContract.claimMessage.estimateGas(
+                    proof.merkle_proof,
+                    proof.rollup_merkle_proof,
+                    globalIndex.toString(),
                     proof.main_exit_root,
                     proof.rollup_exit_root,
-                    [{
-                        smtProofLocalExitRoot: proof.merkle_proof,
-                        smtProofRollupExitRoot: proof.rollup_merkle_proof,
-                        globalIndex: globalIndex.toString(),
-                        originNetwork: '0',
-                        originAddress: transaction.transactionInitiator,
-                        destinationAddress: transaction.receiver,
-                        amount: transaction.originTokenAddress ? '0' : transaction.amounts ? transaction.amounts[0] : '0',
-                        metadata: transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
-                        isMessage: true
-                    }]
+                    '0',
+                    transaction.transactionInitiator,
+                    this.destinationNetwork,
+                    transaction.receiver,
+                    transaction.originTokenAddress ? '0' : transaction.amounts ? transaction.amounts[0] : '0',
+                    transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
                 )
             }
 
-            await this.contract.sendCompressedClaims.estimateGas(compressedClaimCalls);
             return true;
         } catch (error: any) {
             if (this.slackNotify) {
@@ -130,14 +131,14 @@ export default class AutoClaimService {
                 }
             }
 
-            response = await this.contract.compressClaimCall(
+            response = await this.compressContract.compressClaimCall(
                 main_exit_root,
                 rollup_exit_root,
                 data,
                 { gasPrice }
             )
-            response = await this.contract.sendCompressedClaims(response)
-            
+            response = await this.compressContract.sendCompressedClaims(response)
+
             Logger.info({
                 type: 'claimBatch',
                 status: 'success',
@@ -175,6 +176,12 @@ export default class AutoClaimService {
                 }
             }
 
+            Logger.info({
+                location: 'AutoClaimService',
+                function: 'claimTransactions',
+                call: 'finalClaimableTransaction length',
+                data: finalClaimableTransaction.length
+            })
             const length = finalClaimableTransaction.length;
             for (let i = 0; i < length; i += 5) {
                 const batch = finalClaimableTransaction.slice(i, i + 5);
