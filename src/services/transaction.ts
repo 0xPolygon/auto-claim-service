@@ -16,7 +16,7 @@ export default class TransactionService {
 
     async getPendingTransactions(): Promise<ITransaction[]> {
         Logger.info({
-            location: 'AutoClaimService',
+            location: 'TransactionService',
             function: 'getPendingTransactions',
             call: 'started'
         })
@@ -41,14 +41,14 @@ export default class TransactionService {
             }
         } catch (error: any) {
             Logger.error({
-                location: 'AutoClaimService',
+                location: 'TransactionService',
                 function: 'getPendingTransactions',
                 error: error.message
             });
         }
 
         Logger.info({
-            location: 'AutoClaimService',
+            location: 'TransactionService',
             function: 'getPendingTransactions',
             call: 'completed',
             length: transactions.length
@@ -59,7 +59,7 @@ export default class TransactionService {
 
     async getProof(sourceNetwork: number, depositCount: number): Promise<IProof | null> {
         Logger.info({
-            location: 'AutoClaimService',
+            location: 'TransactionService',
             function: 'getProof',
             call: 'started',
             data: {
@@ -86,7 +86,7 @@ export default class TransactionService {
             }
         } catch (error: any) {
             Logger.error({
-                location: 'AutoClaimService',
+                location: 'TransactionService',
                 function: 'getProof',
                 error: error.message,
                 data: {
@@ -96,7 +96,7 @@ export default class TransactionService {
             });
         }
         Logger.info({
-            location: 'AutoClaimService',
+            location: 'TransactionService',
             function: 'getProof',
             call: 'completed'
         })

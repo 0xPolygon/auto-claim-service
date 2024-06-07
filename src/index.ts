@@ -3,6 +3,7 @@ import AutoClaimService from "./services/auto-claim.js";
 import { ethers } from 'ethers';
 import config from "./config/index.js";
 import claimCompressorAbi from "./abi/claim_compressor.js";
+import bridgeAbi from "./abi/bridge.js";
 import SlackNotify from "./services/slack-notify.js";
 import GasStation from "./services/gas-station.js";
 import TransactionService from "./services/transaction.js";
@@ -35,19 +36,22 @@ async function start() {
         const provider = new ethers.JsonRpcProvider(config.RPC_URL);
         const wallet = new ethers.Wallet(config.PRIVATE_KEY as string, provider);
 
-        const contract = new ethers.Contract(
-            config.CLAIM_COMPRESSOR_CONTRACT as string,
-            claimCompressorAbi,
-            wallet
-        );
-
         let slackNotify = null;
         if (config.SLACK_URL) {
             slackNotify = new SlackNotify(config.SLACK_URL)
         }
         autoClaimService = new AutoClaimService(
             config.NETWORK as string,
-            contract,
+            new ethers.Contract(
+                config.CLAIM_COMPRESSOR_CONTRACT as string,
+                claimCompressorAbi,
+                wallet
+            ),
+            new ethers.Contract(
+                config.BRIDGE_CONTRACT as string,
+                bridgeAbi,
+                wallet
+            ),
             new TransactionService(
                 config.PROOF_URL as string,
                 config.TRANSACTIONS_URL as string,
@@ -56,7 +60,8 @@ async function start() {
                 config.TRANSACTIONS_API_KEY,
                 config.PROOF_API_KEY
             ),
-            new GasStation(config.GAS_STATION_URL as string,),
+            new GasStation(config.GAS_STATION_URL as string),
+            config.DESTINATION_NETWORK as string,
             slackNotify
         );
 
