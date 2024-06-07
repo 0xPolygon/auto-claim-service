@@ -83,7 +83,7 @@ export default class AutoClaimService {
                     bridgeTxHash: transaction.transactionHash as string,
                     sourceNetwork: transaction.sourceNetwork,
                     destinationNetwork: transaction.destinationNetwork,
-                    error: error.message ? error.message : JSON.stringify(error),
+                    error: error.message ? error.message.slice(0, 100) : '',
                     depositIndex: transaction.counter as number
                 });
             }
