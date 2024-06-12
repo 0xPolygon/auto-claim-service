@@ -7,6 +7,8 @@ import GasStation from './gas-station.js';
 import TransactionService from "./transaction.js";
 const _GLOBAL_INDEX_MAINNET_FLAG = BigInt(2 ** 64);
 
+let failedTx: { [key: number]: number } = {};
+
 /**
  * AutoClaimService service class is a class which has function to autoclaim transactions
  * 
@@ -76,16 +78,30 @@ export default class AutoClaimService {
 
             return true;
         } catch (error: any) {
-            if (this.slackNotify) {
-                await this.slackNotify.notifyAdminForError({
-                    network: this.network,
-                    claimType: transaction.dataType as string,
-                    bridgeTxHash: transaction.transactionHash as string,
-                    sourceNetwork: transaction.sourceNetwork,
-                    destinationNetwork: transaction.destinationNetwork,
-                    error: error.message ? error.message.slice(0, 100) : '',
-                    depositIndex: transaction.counter as number
-                });
+            if (transaction.counter) {
+                if (failedTx[transaction.counter]) {
+                    failedTx[transaction.counter] = failedTx[transaction.counter] + 1;
+                } else {
+                    failedTx[transaction.counter] = 1;
+                }
+
+                if (this.slackNotify) {
+                    if (
+                        failedTx[transaction.counter] &&
+                        (failedTx[transaction.counter] - 1) % 10 === 0 &&
+                        failedTx[transaction.counter] < 100
+                    ) {
+                        await this.slackNotify.notifyAdminForError({
+                            network: this.network,
+                            claimType: transaction.dataType as string,
+                            bridgeTxHash: transaction.transactionHash as string,
+                            sourceNetwork: transaction.sourceNetwork,
+                            destinationNetwork: transaction.destinationNetwork,
+                            error: error.message ? error.message.slice(0, 100) : '',
+                            depositIndex: transaction.counter
+                        });
+                    }
+                }
             }
             return false;
         }
