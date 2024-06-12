@@ -78,31 +78,33 @@ export default class AutoClaimService {
 
             return true;
         } catch (error: any) {
-            if (transaction.counter) {
-                if (failedTx[transaction.counter]) {
-                    failedTx[transaction.counter] = failedTx[transaction.counter] + 1;
-                } else {
-                    failedTx[transaction.counter] = 1;
-                }
-
-                if (this.slackNotify) {
-                    if (
-                        failedTx[transaction.counter] &&
-                        (failedTx[transaction.counter] - 1) % 10 === 0 &&
-                        failedTx[transaction.counter] < 100
-                    ) {
-                        await this.slackNotify.notifyAdminForError({
-                            network: this.network,
-                            claimType: transaction.dataType as string,
-                            bridgeTxHash: transaction.transactionHash as string,
-                            sourceNetwork: transaction.sourceNetwork,
-                            destinationNetwork: transaction.destinationNetwork,
-                            error: error.message ? error.message.slice(0, 100) : '',
-                            depositIndex: transaction.counter
-                        });
-                    }
-                }
+            if (!transaction.counter) {
+                return false;
             }
+
+            if (failedTx[transaction.counter]) {
+                failedTx[transaction.counter] = failedTx[transaction.counter] + 1;
+            } else {
+                failedTx[transaction.counter] = 1;
+            }
+
+            if (
+                this.slackNotify &&
+                failedTx[transaction.counter] &&
+                (failedTx[transaction.counter] - 1) % 10 === 0 &&
+                failedTx[transaction.counter] < 100
+            ) {
+                await this.slackNotify.notifyAdminForError({
+                    network: this.network,
+                    claimType: transaction.dataType as string,
+                    bridgeTxHash: transaction.transactionHash as string,
+                    sourceNetwork: transaction.sourceNetwork,
+                    destinationNetwork: transaction.destinationNetwork,
+                    error: error.message ? error.message.slice(0, 100) : '',
+                    depositIndex: transaction.counter
+                });
+            }
+
             return false;
         }
     }
