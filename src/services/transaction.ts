@@ -58,14 +58,14 @@ export default class TransactionService {
     }
 
     async getProof(sourceNetwork: number, depositCount: number): Promise<IProof | null> {
-        Logger.info({
-            location: 'TransactionService',
-            function: 'getProof',
-            call: 'started',
-            data: {
-                depositCount
-            }
-        })
+        // Logger.info({
+        //     location: 'TransactionService',
+        //     function: 'getProof',
+        //     call: 'started',
+        //     data: {
+        //         depositCount
+        //     }
+        // })
         let proof: IProof | null = null;
         try {
             let headers = {};
@@ -96,11 +96,11 @@ export default class TransactionService {
                 }
             });
         }
-        Logger.info({
-            location: 'TransactionService',
-            function: 'getProof',
-            call: 'completed'
-        })
+        // Logger.info({
+        //     location: 'TransactionService',
+        //     function: 'getProof',
+        //     call: 'completed'
+        // })
         return proof;
     }
 }
