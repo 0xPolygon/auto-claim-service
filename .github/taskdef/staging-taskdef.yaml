@@ -11,9 +11,9 @@ env_vars:
   - name: NETWORK
     value: testnet
   - name: TRANSACTIONS_URL
-    value: https://api-gateway.polygon.technology/api/v3/transactions/testnet
+    value: https://api-gateway-staging.polygon.technology/api/v3/transactions/testnet
   - name: PROOF_URL
-    value: https://api-gateway.polygon.technology/api/v3/merkle-proof/testnet
+    value: https://api-gateway-staging.polygon.technology/api/v3/proof/testnet/merkle-proof
   - name: CLAIM_COMPRESSOR_CONTRACT
     value: "0xeADFA914e7aBf33179E7820Bd13043962a7B5F9d"
   - name: BRIDGE_CONTRACT
