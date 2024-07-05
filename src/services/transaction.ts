@@ -91,7 +91,8 @@ export default class TransactionService {
                 error: error.message,
                 data: {
                     sourceNetwork,
-                    depositCount
+                    depositCount,
+                    url: `${this.proofUrl}?networkId=${sourceNetwork}&depositCount=${depositCount}`
                 }
             });
         }
