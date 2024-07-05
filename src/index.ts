@@ -26,7 +26,7 @@ let autoClaimService: AutoClaimService;
 async function run() {
     while (true) {
         await autoClaimService.claimTransactions();
-        await new Promise(r => setTimeout(r, 120000));
+        await new Promise(r => setTimeout(r, 300000));
     }
 }
 
