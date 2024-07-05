@@ -9,57 +9,20 @@ export default class SlackNotify {
         await axios.post(this.slackWebhookUrl, {
             blocks: [
                 {
-                    type: "header",
+                    type: "section",
                     text: {
-                        type: "plain_text",
-                        text: "Claim " + params.claimType + " Details: " + params.sourceNetwork + "-" + params.depositIndex,
+                        type: "mrkdwn",
+                        text:
+                            "```SourceNetwork: " + params.sourceNetwork + " \n" +
+                            "BridgeTxHash: " + params.bridgeTxHash + "\n" +
+                            "DestinationNetwork: " + params.destinationNetwork + "\n" +
+                            "DepositIndex: " + params.depositIndex + "\n" +
+                            "Error: " + params.error + "```"
                     }
                 },
                 {
-                    type: "section",
-                    text: {
-                        type: "mrkdwn",
-                        text: "*Network:* " + params.network,
-                    },
-                },
-                {
-                    type: "section",
-                    text: {
-                        type: "mrkdwn",
-                        text: "*sourceNetwork:* " + params.sourceNetwork,
-                    },
-                },
-                {
-                    type: "section",
-                    text: {
-                        type: "mrkdwn",
-                        text: "*bridgeTxHash:* " + params.bridgeTxHash,
-                    },
-                },
-                {
-                    type: "section",
-                    text: {
-                        type: "mrkdwn",
-                        text: "*destinationNetwork:* " + params.destinationNetwork,
-                    },
-                },
-                {
-                    type: "section",
-                    text: {
-                        type: "mrkdwn",
-                        text: "*depositIndex:* " + params.depositIndex,
-                    },
-                },
-                {
-                    type: "section",
-                    text: {
-                        type: "mrkdwn",
-                        text: "*Error:* " + params.error,
-                    },
-                },
-                {
                     type: "divider"
-                },
+                }
             ],
         });
     }

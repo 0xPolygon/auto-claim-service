@@ -1,5 +1,4 @@
 export interface INotifyParams {
-    network: string
     claimType: string
     bridgeTxHash: string
     sourceNetwork: number

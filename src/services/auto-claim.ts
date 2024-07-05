@@ -91,11 +91,10 @@ export default class AutoClaimService {
             if (
                 this.slackNotify &&
                 failedTx[transaction.counter] &&
-                (failedTx[transaction.counter] - 1) % 10 === 0 &&
-                failedTx[transaction.counter] < 100
+                (failedTx[transaction.counter] - 1) % 25 === 0 &&
+                failedTx[transaction.counter] <= 51
             ) {
                 await this.slackNotify.notifyAdminForError({
-                    network: this.network,
                     claimType: transaction.dataType as string,
                     bridgeTxHash: transaction.transactionHash as string,
                     sourceNetwork: transaction.sourceNetwork,
