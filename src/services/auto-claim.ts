@@ -8,7 +8,7 @@ import TransactionService from "./transaction.js";
 const _GLOBAL_INDEX_MAINNET_FLAG = BigInt(2 ** 64);
 
 let failedTx: { [key: number]: number } = {};
-
+let completedTx: { [key: string]: boolean } = {};
 /**
  * AutoClaimService service class is a class which has function to autoclaim transactions
  * 
@@ -92,7 +92,8 @@ export default class AutoClaimService {
                 this.slackNotify &&
                 failedTx[transaction.counter] &&
                 (failedTx[transaction.counter] - 1) % 25 === 0 &&
-                failedTx[transaction.counter] <= 51
+                failedTx[transaction.counter] <= 51 &&
+                !completedTx[`${transaction.sourceNetwork}-${transaction.counter}`]
             ) {
                 await this.slackNotify.notifyAdminForError({
                     claimType: transaction.dataType as string,
@@ -155,6 +156,9 @@ export default class AutoClaimService {
                 { gasPrice }
             )
             response = await this.compressContract.sendCompressedClaims(response)
+            for (const tx of batch) {
+                completedTx[`${tx.transaction.sourceNetwork}-${tx.transaction.counter}`] = true
+            }
 
             Logger.info({
                 type: 'claimBatch',
