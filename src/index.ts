@@ -40,8 +40,13 @@ async function start() {
         if (config.SLACK_URL) {
             slackNotify = new SlackNotify(config.SLACK_URL)
         }
+
+        let ethersClients: { [key: string]: ethers.JsonRpcProvider } = {}
+        for (let index = 0; index < JSON.parse(config.SOURCE_NETWORKS).length; index += 1) {
+            ethersClients[JSON.parse(config.SOURCE_NETWORKS)[index]] = new ethers.JsonRpcProvider(JSON.parse(config.SOURCE_NETWORKS_RPC)[index])
+        }
+
         autoClaimService = new AutoClaimService(
-            config.NETWORK as string,
             new ethers.Contract(
                 config.CLAIM_COMPRESSOR_CONTRACT as string,
                 claimCompressorAbi,
@@ -57,6 +62,7 @@ async function start() {
                 config.TRANSACTIONS_URL as string,
                 config.SOURCE_NETWORKS,
                 config.DESTINATION_NETWORK as string,
+                ethersClients,
                 config.TRANSACTIONS_API_KEY,
                 config.PROOF_API_KEY
             ),

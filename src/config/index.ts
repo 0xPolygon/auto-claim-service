@@ -5,6 +5,7 @@ config();
 export default {
     PRIVATE_KEY: process.env.PRIVATE_KEY,
     SOURCE_NETWORKS: process.env.SOURCE_NETWORKS || '[]',
+    SOURCE_NETWORKS_RPC: process.env.SOURCE_NETWORKS_RPC || '[]',
     DESTINATION_NETWORK: process.env.DESTINATION_NETWORK,
     TRANSACTIONS_URL: process.env.TRANSACTIONS_URL,
     TRANSACTIONS_API_KEY: process.env.TRANSACTIONS_API_KEY,
