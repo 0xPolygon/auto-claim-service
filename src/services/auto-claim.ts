@@ -18,7 +18,6 @@ export default class AutoClaimService {
     /**
      * @constructor
      * 
-     * @param {string} network
      * @param {ethers.Contract} compressContract
      * @param {ethers.Contract} bridgeContract
      * @param {TransactionService} transactionService
@@ -27,7 +26,6 @@ export default class AutoClaimService {
      * @param {SlackNotify | null} slackNotify
      */
     constructor(
-        private network: string,
         private compressContract: ethers.Contract,
         private bridgeContract: ethers.Contract,
         private transactionService: TransactionService,
@@ -61,19 +59,28 @@ export default class AutoClaimService {
                     transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x'
                 )
             } else {
-                await this.bridgeContract.claimMessage.estimateGas(
-                    proof.merkle_proof,
-                    proof.rollup_merkle_proof,
-                    globalIndex.toString(),
-                    proof.main_exit_root,
-                    proof.rollup_exit_root,
-                    '0',
-                    transaction.transactionInitiator,
-                    this.destinationNetwork,
-                    transaction.receiver,
-                    transaction.originTokenAddress ? '0' : transaction.amounts ? transaction.amounts[0] : '0',
-                    transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x',
+                const transactionPayload = await this.transactionService.getTransactionPayload(
+                    transaction.transactionHash as string,
+                    transaction.sourceNetwork,
+                    transaction.counter as number
                 )
+                if (transactionPayload) {
+                    await this.bridgeContract.claimMessage.estimateGas(
+                        proof.merkle_proof,
+                        proof.rollup_merkle_proof,
+                        transactionPayload.globalIndex.toString(),
+                        proof.main_exit_root,
+                        proof.rollup_exit_root,
+                        transactionPayload.originNetwork,
+                        transactionPayload.originTokenAddress,
+                        transactionPayload.destinationNetwork,
+                        transactionPayload.destinationAddress,
+                        transactionPayload.amount,
+                        transactionPayload.metadata
+                    )
+                } else {
+                    return false;
+                }
             }
 
             return true;
@@ -135,17 +142,24 @@ export default class AutoClaimService {
                         isMessage: false
                     })
                 } else {
-                    data.push({
-                        smtProofLocalExitRoot: tx.proof.merkle_proof,
-                        smtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
-                        globalIndex: tx.globalIndex.toString(),
-                        originNetwork: '0',
-                        originAddress: tx.transaction.transactionInitiator,
-                        destinationAddress: tx.transaction.receiver,
-                        amount: tx.transaction.originTokenAddress ? '0' : tx.transaction.amounts ? tx.transaction.amounts[0] : '0',
-                        metadata: tx.transaction.metadata && tx.transaction.metadata !== "" ? tx.transaction.metadata : '0x',
-                        isMessage: true
-                    })
+                    const transactionPayload = await this.transactionService.getTransactionPayload(
+                        tx.transaction.transactionHash as string,
+                        tx.transaction.sourceNetwork,
+                        tx.transaction.counter as number
+                    )
+                    if (transactionPayload) {
+                        data.push({
+                            smtProofLocalExitRoot: tx.proof.merkle_proof,
+                            smtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
+                            globalIndex: transactionPayload.globalIndex.toString(),
+                            originNetwork: transactionPayload.originNetwork,
+                            originAddress: transactionPayload.originTokenAddress,
+                            destinationAddress: transactionPayload.destinationAddress,
+                            amount: transactionPayload.amount,
+                            metadata: transactionPayload.metadata,
+                            isMessage: true
+                        })
+                    }
                 }
             }
 
@@ -178,13 +192,12 @@ export default class AutoClaimService {
                 function: 'claimTransactions',
                 call: 'started'
             })
-            const transactions = await this.transactionService.getPendingTransactions();
+            let transactions = await this.transactionService.getPendingTransactions();
 
             let finalClaimableTransaction = [];
             for (const transaction of transactions) {
                 const proof = await this.transactionService.getProof(transaction.sourceNetwork, transaction.counter as number)
                 const globalIndex = this.computeGlobalIndex(transaction.counter as number, transaction.sourceNetwork);
-
                 if (proof) {
                     let estimateGas = await this.estimateGas(transaction, proof, globalIndex);
                     if (estimateGas) {
