@@ -2,7 +2,7 @@ region: eu-west-1
 hostport: 80
 containerport: 80
 role: backend-apps
-environment: staging
+environment: prod
 iac: terraform-workspace-aws-prod-apps-eu-west-1-apps-auto-claim-polygon-technology
 team_name: product-apps
 memory: 1024
@@ -25,12 +25,12 @@ env_vars:
   - name: DESTINATION_NETWORK
     value: "1"
   - name: SENTRY_ENVIRONMENT
-    value: staging
+    value: prod
 secret_vars:
-  - PRIVATE_KEY
-  - RPC_URL
-  - SLACK_URL
-  - SENTRY_DSN
-  - TRANSACTIONS_API_KEY
-  - PROOF_API_KEY
-  - SOURCE_NETWORKS_RPC
+    - PRIVATE_KEY
+    - RPC_URL
+    - SLACK_URL
+    - SENTRY_DSN
+    - TRANSACTIONS_API_KEY
+    - PROOF_API_KEY
+    - SOURCE_NETWORKS_RPC
