@@ -1,0 +1,14 @@
+name: Auto Claim Deployment Staging
+on:
+  push:
+    branches:
+      - batch-claim
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/build_and_deploy.yml
+    with:
+      environment: 'staging'
+      core_app: "auto-claim"
+    secrets: inherit
