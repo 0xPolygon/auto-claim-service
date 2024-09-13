@@ -1,0 +1,36 @@
+region: eu-west-1
+hostport: 80
+containerport: 80
+role: backend-apps
+environment: prod
+iac: terraform-workspace-aws-prod-apps-eu-west-1-apps-auto-claim-xlayer-polygon-technology
+team_name: product-apps
+memory: 1024
+cpu: 512
+env_vars:
+  - name: NETWORK
+    value: mainnet
+  - name: TRANSACTIONS_URL
+    value: https://api-gateway-staging.polygon.technology/api/v3/transactions/mainnet
+  - name: PROOF_URL
+    value: https://api-gateway-staging.polygon.technology/api/v3/proof/mainnet/merkle-proof
+  - name: CLAIM_COMPRESSOR_CONTRACT
+    value: "0xfaE16ccF8a192C64f90088130BED0a5a392Ab4D6"
+  - name: BRIDGE_CONTRACT
+    value: "0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"
+  - name: GAS_STATION_URL
+    value: https://gasstation.polygon.technology/xlayer
+  - name: SOURCE_NETWORKS
+    value: "[0,1,2]"
+  - name: DESTINATION_NETWORK
+    value: "3"
+  - name: SENTRY_ENVIRONMENT
+    value: prod
+secret_vars:
+    - PRIVATE_KEY
+    - RPC_URL
+    - SLACK_URL
+    - SENTRY_DSN
+    - TRANSACTIONS_API_KEY
+    - PROOF_API_KEY
+    - SOURCE_NETWORKS_RPC
