@@ -15,16 +15,16 @@ env_vars:
   - name: PROOF_URL
     value: https://api-gateway-staging.polygon.technology/api/v3/proof/mainnet/merkle-proof
   - name: CLAIM_COMPRESSOR_CONTRACT
-    value: "0x2E38cD55163137483E30580Cb468C2dFf1d85077"
+    value: "0x3b82da772c825283d85d5d6717a77c6ff582053b"
   - name: BRIDGE_CONTRACT
     value: "0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"
   - name: GAS_STATION_URL
     value: https://gasstation.polygon.technology/zkevm
   - name: SOURCE_NETWORKS
-    value: "[2]"
+    value: "[2,3]"
   - name: DESTINATION_NETWORK
     value: "1"
-  - name: SENTRY_ENVIRONMENT
+  - name: NODE_ENV
     value: prod
 secret_vars:
     - PRIVATE_KEY
