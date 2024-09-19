@@ -2,8 +2,8 @@ region: eu-west-1
 hostport: 80
 containerport: 80
 role: backend-apps
-environment: staging
-iac: terraform-workspace-aws-test-apps-eu-west-1-apps-auto-claim-staging-polygon-technology
+environment: prod
+iac: terraform-workspace-aws-prod-applications-eu-west-1-apps-auto-claim-zkevm-testnet-auto-claim
 team_name: product-apps
 memory: 1024
 cpu: 512
@@ -15,7 +15,7 @@ env_vars:
   - name: PROOF_URL
     value: https://api-gateway.polygon.technology/api/v3/proof/testnet/merkle-proof
   - name: CLAIM_COMPRESSOR_CONTRACT
-    value: "0xeADFA914e7aBf33179E7820Bd13043962a7B5F9d"
+    value: "0xcb8b435481dA1eD5ABC895e03535ce0Bba3b6905"
   - name: BRIDGE_CONTRACT
     value: "0x528e26b25a34a4A5d0dbDa1d57D318153d2ED582"
   - name: GAS_STATION_URL
@@ -25,12 +25,10 @@ env_vars:
   - name: DESTINATION_NETWORK
     value: "1"
   - name: NODE_ENV
-    value: staging
+    value: prod
 secret_vars:
   - PRIVATE_KEY
   - RPC_URL
   - SLACK_URL
   - SENTRY_DSN
-  - TRANSACTIONS_API_KEY
-  - PROOF_API_KEY
   - SOURCE_NETWORKS_RPC
