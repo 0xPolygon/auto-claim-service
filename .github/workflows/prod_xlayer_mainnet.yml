@@ -1,4 +1,4 @@
-name: Auto Claim Deployment Staging
+name: Xlayer mainnet Auto Claim Deployment Prod
 on:
   push:
     branches:
@@ -9,6 +9,6 @@ jobs:
   deploy:
     uses: ./.github/workflows/build_and_deploy.yml
     with:
-      environment: 'staging'
-      core_app: "auto-claim"
+      environment: 'prod'
+      core_app: "xlayer-mainnet-auto-claim"
     secrets: inherit

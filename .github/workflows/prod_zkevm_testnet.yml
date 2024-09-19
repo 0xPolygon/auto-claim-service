@@ -1,4 +1,4 @@
-name: Auto Claim Deployment Prod
+name: Zkevm testnet Auto Claim Deployment Prod
 on:
   push:
     branches:
@@ -10,5 +10,5 @@ jobs:
     uses: ./.github/workflows/build_and_deploy.yml
     with:
       environment: 'prod'
-      core_app: "auto-claim"
+      core_app: "zkevm-testnet-auto-claim"
     secrets: inherit

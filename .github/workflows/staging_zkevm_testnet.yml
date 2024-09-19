@@ -1,0 +1,14 @@
+name: Zkevm testnet Auto Claim Deployment staging
+on:
+  push:
+    branches:
+      - batch-staging
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/build_and_deploy.yml
+    with:
+      environment: 'staging'
+      core_app: "zkevm-testnet-auto-claim"
+    secrets: inherit
