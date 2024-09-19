@@ -3,7 +3,7 @@ hostport: 80
 containerport: 80
 role: backend-apps
 environment: prod
-iac: terraform-workspace-aws-prod-apps-eu-west-1-apps-xlayer-mainnet-auto-claim-polygon-technology
+iac: terraform-workspace-aws-prod-applications-eu-west-1-apps-auto-claim-xlayer-mainnet-auto-claim
 team_name: product-apps
 memory: 1024
 cpu: 512
