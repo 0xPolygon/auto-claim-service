@@ -38,11 +38,14 @@ export default class TransactionService {
                 }
             }
             let transactionData = await axios.get(
-                `${this.transactionUrl}?userAddress=${sourceNetworkIds}&destinationNetworkIds=${this.destinationNetwork}&status=READY_TO_CLAIM`,
+                `${this.transactionUrl}?userAddress=${sourceNetworkIds}&destinationNetworkIds=${this.destinationNetwork}&status=READY_TO_CLAIM&pageSize=1000`,
                 { headers }
             );
             if (transactionData && transactionData.data && transactionData.data.result) {
                 transactions = transactionData.data.result;
+                transactions = transactions.filter(obj => !(
+                    obj.dataType === 'MESSAGE' && obj.amounts && obj.amounts[0] === '0'
+                ))
             }
         } catch (error: any) {
             Logger.error({
