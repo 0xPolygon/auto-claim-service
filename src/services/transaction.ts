@@ -15,8 +15,7 @@ export default class TransactionService {
         private sourceNetworks: string,
         private destinationNetwork: string,
         private ethersClients: { [key: string]: ethers.JsonRpcProvider },
-        private transactionApiKey: string | undefined,
-        private proofApiKey: string | undefined,
+        private apiGatewayApiKey: string | undefined
     ) { }
 
     async getPendingTransactions(): Promise<ITransaction[]> {
@@ -32,9 +31,9 @@ export default class TransactionService {
                 sourceNetworkIds = `${sourceNetworkIds}&sourceNetworkIds=${networkId}`
             })
             let headers = {};
-            if (this.transactionApiKey) {
+            if (this.apiGatewayApiKey) {
                 headers = {
-                    'x-access-token': this.transactionApiKey
+                    'x-api-key': this.apiGatewayApiKey
                 }
             }
             let transactionData = await axios.get(
@@ -103,20 +102,12 @@ export default class TransactionService {
     }
 
     async getProof(sourceNetwork: number, depositCount: number): Promise<IProof | null> {
-        // Logger.info({
-        //     location: 'TransactionService',
-        //     function: 'getProof',
-        //     call: 'started',
-        //     data: {
-        //         depositCount
-        //     }
-        // })
         let proof: IProof | null = null;
         try {
             let headers = {};
-            if (this.proofApiKey) {
+            if (this.apiGatewayApiKey) {
                 headers = {
-                    'x-access-token': this.proofApiKey
+                    'x-api-key': this.apiGatewayApiKey
                 }
             }
             let proofData = await axios.get(
@@ -141,11 +132,6 @@ export default class TransactionService {
                 }
             });
         }
-        // Logger.info({
-        //     location: 'TransactionService',
-        //     function: 'getProof',
-        //     call: 'completed'
-        // })
         return proof;
     }
 }
