@@ -63,8 +63,7 @@ async function start() {
                 config.SOURCE_NETWORKS,
                 config.DESTINATION_NETWORK as string,
                 ethersClients,
-                config.TRANSACTIONS_API_KEY,
-                config.PROOF_API_KEY
+                config.API_GATEWAY_API_KEY
             ),
             new GasStation(config.GAS_STATION_URL as string),
             config.DESTINATION_NETWORK as string,
