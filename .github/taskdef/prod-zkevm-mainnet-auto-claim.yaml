@@ -21,7 +21,7 @@ env_vars:
   - name: GAS_STATION_URL
     value: https://gasstation.polygon.technology/zkevm
   - name: SOURCE_NETWORKS
-    value: "[3]"
+    value: "[0,3]"
   - name: DESTINATION_NETWORK
     value: "1"
   - name: NODE_ENV
