@@ -1,0 +1,35 @@
+region: eu-west-1
+hostport: 80
+containerport: 80
+role: backend-apps
+environment: prod
+iac: terraform-workspace-aws-prod-applications-eu-west-1-apps-auto-claim-silicon-zk-testnet-auto-claim
+team_name: product-apps
+memory: 1024
+cpu: 512
+env_vars:
+    - name: NETWORK
+      value: testnet
+    - name: TRANSACTIONS_URL
+      value: https://api-gateway-staging.polygon.technology/api/v3/transactions/testnet
+    - name: PROOF_URL
+      value: https://api-gateway-staging.polygon.technology/api/v3/proof/testnet/merkle-proof
+    - name: CLAIM_COMPRESSOR_CONTRACT
+      value: ""
+    - name: BRIDGE_CONTRACT
+      value: ""
+    - name: GAS_STATION_URL
+      value: https://gasstation.polygon.technology/zkevm/silicon
+    - name: SOURCE_NETWORKS
+      value: "[0,1]"
+    - name: DESTINATION_NETWORK
+      value: "16"
+    - name: NODE_ENV
+      value: prod
+secret_vars:
+    - PRIVATE_KEY
+    - RPC_URL
+    - SLACK_URL
+    - SENTRY_DSN
+    - SOURCE_NETWORKS_RPC
+    - API_GATEWAY_API_KEY
