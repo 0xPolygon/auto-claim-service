@@ -1,0 +1,14 @@
+name: Ternoa mainnet Auto Claim Deployment Prod
+on:
+  push:
+    branches:
+      - batch-claim
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/build_and_deploy.yml
+    with:
+      environment: 'prod'
+      core_app: "ternoa-mainnet-auto-claim"
+    secrets: inherit
