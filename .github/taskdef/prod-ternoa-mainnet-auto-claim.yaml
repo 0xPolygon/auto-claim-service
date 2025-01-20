@@ -15,7 +15,7 @@ env_vars:
   - name: PROOF_URL
     value: https://api-gateway-staging.polygon.technology/api/v3/proof/mainnet/merkle-proof
   - name: CLAIM_COMPRESSOR_CONTRACT
-    value: "0xcb8b435481dA1eD5ABC895e03535ce0Bba3b6905"
+    value: "0xCe3F1aA1Fec919EF0aA3Eb8c082188CB6CA324FE"
   - name: BRIDGE_CONTRACT
     value: "0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"
   - name: GAS_STATION_URL
