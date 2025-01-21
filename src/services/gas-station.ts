@@ -9,9 +9,9 @@ export default class GasStation {
         try {
             let price = await axios.get(`${this.gasStationUrl}`);
             if (
-                price && price.data && price.data.fast
+                price && price.data
             ) {
-                return price.data.fast * (10 ** 9);
+                return (price.data.fast || 0) * (10 ** 9);
             }
             throw new Error("something went wront while calculating gasPrice")
         } catch (error: any) {
