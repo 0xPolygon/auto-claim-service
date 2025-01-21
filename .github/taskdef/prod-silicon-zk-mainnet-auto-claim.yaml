@@ -21,7 +21,7 @@ env_vars:
   - name: GAS_STATION_URL
     value: https://gasstation.polygon.technology/xlayer
   - name: SOURCE_NETWORKS
-    value: "[0,1,3]"
+    value: "[0,1,3,13]"
   - name: DESTINATION_NETWORK
     value: "10"
   - name: NODE_ENV
