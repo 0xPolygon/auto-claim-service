@@ -11,15 +11,15 @@ env_vars:
     - name: NETWORK
       value: testnet
     - name: TRANSACTIONS_URL
-      value: https://api-gateway-staging.polygon.technology/api/v3/transactions/testnet
+      value: https://api-gateway.polygon.technology/api/v3/transactions/testnet
     - name: PROOF_URL
-      value: https://api-gateway-staging.polygon.technology/api/v3/proof/testnet/merkle-proof
+      value: https://api-gateway.polygon.technology/api/v3/proof/testnet/merkle-proof
     - name: CLAIM_COMPRESSOR_CONTRACT
       value: "0xCe3F1aA1Fec919EF0aA3Eb8c082188CB6CA324FE"
     - name: BRIDGE_CONTRACT
       value: "0x528e26b25a34a4A5d0dbDa1d57D318153d2ED582"
     - name: GAS_STATION_URL
-      value: https://gasstation-staging.polygon.technology/1722641160
+      value: https://gasstation.polygon.technology/1722641160
     - name: SOURCE_NETWORKS
       value: "[0,1]"
     - name: DESTINATION_NETWORK
