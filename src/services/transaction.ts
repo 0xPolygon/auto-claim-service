@@ -3,47 +3,37 @@ import { ethers } from 'ethers';
 import AbiCoder from "web3-eth-abi";
 import { Logger } from '@maticnetwork/chain-indexer-framework';
 import { IProof } from "../types/index.js";
-import { ITransaction } from '@maticnetwork/bridge-api-common/interfaces/transaction';
 
 const _GLOBAL_INDEX_MAINNET_FLAG = BigInt(2 ** 64);
 
 export default class TransactionService {
 
     constructor(
-        private proofUrl: string,
-        private transactionUrl: string,
+        private bridgeHubAPIUrl: string,
         private sourceNetworks: string,
         private destinationNetwork: string,
         private ethersClients: { [key: string]: ethers.JsonRpcProvider },
-        private apiGatewayApiKey: string | undefined
     ) { }
 
-    async getPendingTransactions(): Promise<ITransaction[]> {
+    async getPendingTransactions(): Promise<any[]> {
         Logger.info({
             location: 'TransactionService',
             function: 'getPendingTransactions',
             call: 'started'
         })
-        let transactions: ITransaction[] = [];
+        let transactions: any[] = [];
         try {
             let sourceNetworkIds = "";
             JSON.parse(this.sourceNetworks).forEach((networkId: number) => {
                 sourceNetworkIds = `${sourceNetworkIds}&sourceNetworkIds=${networkId}`
             })
-            let headers = {};
-            if (this.apiGatewayApiKey) {
-                headers = {
-                    'x-api-key': this.apiGatewayApiKey
-                }
-            }
             let transactionData = await axios.get(
-                `${this.transactionUrl}?userAddress=${sourceNetworkIds}&destinationNetworkIds=${this.destinationNetwork}&status=READY_TO_CLAIM&pageSize=1000`,
-                { headers }
+                `${this.bridgeHubAPIUrl}/transactions?destinationNetworkIds=${this.destinationNetwork}${sourceNetworkIds}&status=READY_TO_CLAIM&pageSize=1000`
             );
-            if (transactionData && transactionData.data && transactionData.data.result) {
-                transactions = transactionData.data.result;
+            if (transactionData && transactionData.data && transactionData.data.data) {
+                transactions = transactionData.data.data;
                 transactions = transactions.filter(obj => !(
-                    obj.dataType === 'MESSAGE' && obj.amounts && obj.amounts[0] === '0'
+                    obj.leafType === 'MESSAGE' && obj.amount === '0'
                 ))
             }
         } catch (error: any) {
@@ -101,18 +91,11 @@ export default class TransactionService {
         return null;
     }
 
-    async getProof(sourceNetwork: number, depositCount: number): Promise<IProof | null> {
+    async getProof(sourceNetwork: number, depositCount: number, leafIndex: number): Promise<IProof | null> {
         let proof: IProof | null = null;
         try {
-            let headers = {};
-            if (this.apiGatewayApiKey) {
-                headers = {
-                    'x-api-key': this.apiGatewayApiKey
-                }
-            }
             let proofData = await axios.get(
-                `${this.proofUrl}?networkId=${sourceNetwork}&depositCount=${depositCount}`,
-                { headers }
+                `${this.bridgeHubAPIUrl}/claim-proof?sourceNetworkId=${sourceNetwork}&leafIndex=${leafIndex}&depositCount=${depositCount}`
             );
             if (
                 proofData && proofData.data && proofData.data.proof &&
@@ -128,7 +111,7 @@ export default class TransactionService {
                 data: {
                     sourceNetwork,
                     depositCount,
-                    url: `${this.proofUrl}?networkId=${sourceNetwork}&depositCount=${depositCount}`
+                    url: `${this.bridgeHubAPIUrl}/claim-proof?sourceNetworkId=${sourceNetwork}&leafIndex=${leafIndex}&depositCount=${depositCount}`
                 }
             });
         }

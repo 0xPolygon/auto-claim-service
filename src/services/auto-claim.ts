@@ -205,8 +205,11 @@ export default class AutoClaimService {
 
             let finalClaimableTransaction = [];
             for (const transaction of transactions) {
-                const proof = await this.transactionService.getProof(transaction.sourceNetwork, transaction.counter as number)
-                const globalIndex = this.computeGlobalIndex(transaction.counter as number, transaction.sourceNetwork);
+                if (!transaction.leafIndex) {
+                    continue;
+                }
+                const proof = await this.transactionService.getProof(transaction.sourceNetwork, transaction.depositCount, transaction.leafIndex)
+                const globalIndex = transaction.globalIndex ?? this.computeGlobalIndex(transaction.depositCount as number, transaction.sourceNetwork);
                 if (proof) {
                     let estimateGas = await this.estimateGas(transaction, proof, globalIndex);
                     if (estimateGas) {
@@ -225,8 +228,7 @@ export default class AutoClaimService {
                 call: 'finalClaimableTransaction length',
                 data: finalClaimableTransaction.length
             })
-            const length = finalClaimableTransaction.length;
-            for (let i = 0; i < length; i += 5) {
+            for (let i = 0; i < finalClaimableTransaction.length; i += 5) {
                 const batch = finalClaimableTransaction.slice(i, i + 5);
                 await this.claim(batch);
             }

@@ -58,12 +58,10 @@ async function start() {
                 wallet
             ),
             new TransactionService(
-                config.PROOF_URL as string,
-                config.TRANSACTIONS_URL as string,
+                config.BRIDGE_HUB_API_URL as string,
                 config.SOURCE_NETWORKS,
                 config.DESTINATION_NETWORK as string,
                 ethersClients,
-                config.API_GATEWAY_API_KEY
             ),
             new GasStation(config.GAS_STATION_URL as string),
             config.DESTINATION_NETWORK as string,
