@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Logger } from '@maticnetwork/chain-indexer-framework';
+import { Logger } from "@polygonlabs/servercore";
 
 export default class GasStation {
 

@@ -1,4 +1,4 @@
-import { Logger } from "@maticnetwork/chain-indexer-framework/logger";
+import { Logger } from "@polygonlabs/servercore";
 import AutoClaimService from "./services/auto-claim.js";
 import { ethers } from 'ethers';
 import config from "./config/index.js";
@@ -12,10 +12,6 @@ Logger.create({
     sentry: {
         dsn: config.LOGGER.SENTRY_DSN,
         level: 'error'
-    },
-    datadog: {
-        api_key: config.LOGGER.DATADOG_API_KEY,
-        service_name: config.LOGGER.DATADOG_APP_KEY
     },
     console: {
         level: "debug"

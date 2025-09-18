@@ -1,14 +1,13 @@
-FROM node:21
+# Stage 1: Build stage
+FROM oven/bun:1.2-alpine AS builder
 WORKDIR /app
-RUN apt-get update || : && apt-get install -y \
-    python3 \
-    build-essential \
-    libsasl2-dev \
-    libsasl2-modules \
-    libssl-dev \
-    git 
 COPY . .
-RUN npm install
-RUN npm run build
+RUN bun install --dev --no-cache
+RUN bun run build
+
+# Stage 2: Runtime stage
+FROM oven/bun:1.2-alpine
 WORKDIR /app
-CMD ["node", "dist/index.js"]
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+CMD ["bun", "run", "dist/index.js"]

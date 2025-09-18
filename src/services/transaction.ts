@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { ethers } from 'ethers';
-import AbiCoder from "web3-eth-abi";
-import { Logger } from '@maticnetwork/chain-indexer-framework';
+import { decodeParameters } from "web3-eth-abi";
+import { Logger } from '@polygonlabs/servercore';
 import { IProof } from "../types/index.js";
 
 const _GLOBAL_INDEX_MAINNET_FLAG = BigInt(2 ** 64);
@@ -68,17 +68,17 @@ export default class TransactionService {
         const transaction = await this.ethersClients[sourceNetwork].getTransactionReceipt(transactionHash);
         if (transaction) {
             let logs = transaction.logs.filter(obj => obj.topics[0].toLowerCase() === '0x501781209a1f8899323b96b4ef08b168df93e0a90c673d1e4cce39366cb62f9b'.toLowerCase())
-            logs = logs.filter(obj => (AbiCoder as any).decodeParameters(
+            logs = logs.filter(obj => decodeParameters(
                 ["uint8", "uint32", "address", "uint32", "address", "uint256", "bytes", "uint32"],
                 obj.data
             )[7] === counter.toString())
             if (logs.length) {
-                let data = (AbiCoder as any).decodeParameters(
+                let data = decodeParameters(
                     ["uint8", "uint32", "address", "uint32", "address", "uint256", "bytes", "uint32"],
                     logs[0].data
                 )
                 return {
-                    globalIndex: this.computeGlobalIndex(data[7], sourceNetwork).toString(),
+                    globalIndex: this.computeGlobalIndex(data[7] as number, sourceNetwork).toString(),
                     originNetwork: data[1],
                     originTokenAddress: data[2],
                     destinationNetwork: data[3],
@@ -98,10 +98,10 @@ export default class TransactionService {
                 `${this.bridgeHubAPIUrl}/claim-proof?sourceNetworkId=${sourceNetwork}&leafIndex=${leafIndex}&depositCount=${depositCount}`
             );
             if (
-                proofData && proofData.data && proofData.data.proof &&
-                proofData.data.proof.merkle_proof && !proofData.data.proof.merkle_proof.message
+                proofData?.data?.data?.proof_local_exit_root &&
+                proofData?.data?.data?.proof_rollup_exit_root
             ) {
-                proof = proofData.data.proof;
+                proof = proofData.data.data;
             }
         } catch (error: any) {
             Logger.error({

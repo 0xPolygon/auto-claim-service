@@ -1,5 +1,5 @@
-import { Logger } from '@maticnetwork/chain-indexer-framework';
-import { ITransaction } from '@maticnetwork/bridge-api-common/interfaces/transaction';
+import { Logger } from '@polygonlabs/servercore';
+import { ITransaction } from '../types/index.js';
 import { ethers } from 'ethers';
 import SlackNotify from './slack-notify.js';
 import { IProof } from "../types/index.js";
@@ -44,71 +44,72 @@ export default class AutoClaimService {
 
     async estimateGas(transaction: ITransaction, proof: IProof, globalIndex: BigInt): Promise<boolean> {
         try {
-            if (transaction.dataType === 'ERC20') {
+            const transactionPayload = await this.transactionService.getTransactionPayload(
+                transaction.transactionHash as string,
+                transaction.sourceNetwork,
+                transaction.depositCount
+            )
+            if (!transactionPayload) {
+                return false;
+            }
+
+            if (transaction.leafType === 'ASSET') {
                 await this.bridgeContract.claimAsset.estimateGas(
-                    proof.merkle_proof,
-                    proof.rollup_merkle_proof,
+                    proof.proof_local_exit_root,
+                    proof.proof_rollup_exit_root,
                     globalIndex.toString(),
-                    proof.main_exit_root,
-                    proof.rollup_exit_root,
-                    transaction.originTokenNetwork,
-                    transaction.originTokenAddress,
-                    this.destinationNetwork,
-                    transaction.receiver,
-                    transaction.amounts ? transaction.amounts[0] : '0',
-                    transaction.metadata && transaction.metadata !== "" ? transaction.metadata : '0x'
+                    proof.l1_info_tree_leaf.mainnet_exit_root,
+                    proof.l1_info_tree_leaf.rollup_exit_root,
+                    transactionPayload.originNetwork,
+                    transactionPayload.originTokenAddress,
+                    transactionPayload.destinationNetwork,
+                    transactionPayload.destinationAddress,
+                    transactionPayload.amount,
+                    transactionPayload.metadata || '0x'
                 )
             } else {
-                const transactionPayload = await this.transactionService.getTransactionPayload(
-                    transaction.transactionHash as string,
-                    transaction.sourceNetwork,
-                    transaction.counter as number
+                await this.bridgeContract.claimMessage.estimateGas(
+                    proof.proof_local_exit_root,
+                    proof.proof_rollup_exit_root,
+                    transactionPayload.globalIndex.toString(),
+                    proof.l1_info_tree_leaf.mainnet_exit_root,
+                    proof.l1_info_tree_leaf.rollup_exit_root,
+                    transactionPayload.originNetwork,
+                    transactionPayload.originTokenAddress,
+                    transactionPayload.destinationNetwork,
+                    transactionPayload.destinationAddress,
+                    transactionPayload.amount,
+                    transactionPayload.metadata
                 )
-                if (transactionPayload) {
-                    await this.bridgeContract.claimMessage.estimateGas(
-                        proof.merkle_proof,
-                        proof.rollup_merkle_proof,
-                        transactionPayload.globalIndex.toString(),
-                        proof.main_exit_root,
-                        proof.rollup_exit_root,
-                        transactionPayload.originNetwork,
-                        transactionPayload.originTokenAddress,
-                        transactionPayload.destinationNetwork,
-                        transactionPayload.destinationAddress,
-                        transactionPayload.amount,
-                        transactionPayload.metadata
-                    )
-                } else {
-                    return false;
-                }
             }
 
             return true;
         } catch (error: any) {
-            if (!transaction.counter) {
+            console.log(error)
+            if (!transaction.depositCount) {
                 return false;
             }
 
-            if (failedTx[transaction.counter]) {
-                failedTx[transaction.counter] = failedTx[transaction.counter] + 1;
+            if (failedTx[transaction.depositCount]) {
+                failedTx[transaction.depositCount] = failedTx[transaction.depositCount] + 1;
             } else {
-                failedTx[transaction.counter] = 1;
+                failedTx[transaction.depositCount] = 1;
             }
 
             if (
                 this.slackNotify &&
-                failedTx[transaction.counter] &&
-                failedTx[transaction.counter] === 25 &&
+                failedTx[transaction.depositCount] &&
+                failedTx[transaction.depositCount] === 25 &&
                 completedTx[transaction.sourceNetwork] &&
-                completedTx[transaction.sourceNetwork] > transaction.counter
+                completedTx[transaction.sourceNetwork] > transaction.depositCount
             ) {
                 await this.slackNotify.notifyAdminForError({
-                    claimType: transaction.dataType as string,
-                    bridgeTxHash: transaction.transactionHash as string,
+                    claimType: transaction.leafType,
+                    bridgeTxHash: transaction.transactionHash,
                     sourceNetwork: transaction.sourceNetwork,
                     destinationNetwork: transaction.destinationNetwork,
                     error: error.message ? error.message.slice(0, 100) : '',
-                    depositIndex: transaction.counter
+                    depositIndex: transaction.depositCount
                 });
             }
 
@@ -125,41 +126,44 @@ export default class AutoClaimService {
                 transactionHashes: batch.map(obj => obj.transaction.transactionHash)
             })
 
-            const main_exit_root = batch[0].proof.main_exit_root;
-            const rollup_exit_root = batch[0].proof.rollup_exit_root;
+            const main_exit_root = batch[0].proof.l1_info_tree_leaf.mainnet_exit_root;
+            const rollup_exit_root = batch[0].proof.l1_info_tree_leaf.rollup_exit_root;
             const data = []
             for (const tx of batch) {
-                if (tx.transaction.dataType === 'ERC20') {
+                const transactionPayload = await this.transactionService.getTransactionPayload(
+                    tx.transaction.transactionHash,
+                    tx.transaction.sourceNetwork,
+                    tx.transaction.depositCount
+                )
+
+                if (!transactionPayload) {
+                    continue;
+                }
+
+                if (tx.transaction.leafType === 'ASSET') {
                     data.push({
-                        smtProofLocalExitRoot: tx.proof.merkle_proof,
-                        smtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
+                        smtProofLocalExitRoot: tx.proof.proof_local_exit_root,
+                        smtProofRollupExitRoot: tx.proof.proof_rollup_exit_root,
                         globalIndex: tx.globalIndex.toString(),
-                        originNetwork: tx.transaction.originTokenNetwork,
-                        originAddress: tx.transaction.originTokenAddress,
-                        destinationAddress: tx.transaction.receiver,
-                        amount: tx.transaction.amounts ? tx.transaction.amounts[0] : '0',
-                        metadata: tx.transaction.metadata && tx.transaction.metadata !== "" ? tx.transaction.metadata : '0x',
+                        originNetwork: transactionPayload.originNetwork,
+                        originAddress: transactionPayload.originTokenAddress,
+                        destinationAddress: transactionPayload.destinationAddress,
+                        amount: transactionPayload.amount,
+                        metadata: transactionPayload.metadata || '0x',
                         isMessage: false
                     })
                 } else {
-                    const transactionPayload = await this.transactionService.getTransactionPayload(
-                        tx.transaction.transactionHash as string,
-                        tx.transaction.sourceNetwork,
-                        tx.transaction.counter as number
-                    )
-                    if (transactionPayload) {
-                        data.push({
-                            smtProofLocalExitRoot: tx.proof.merkle_proof,
-                            smtProofRollupExitRoot: tx.proof.rollup_merkle_proof,
-                            globalIndex: transactionPayload.globalIndex.toString(),
-                            originNetwork: transactionPayload.originNetwork,
-                            originAddress: transactionPayload.originTokenAddress,
-                            destinationAddress: transactionPayload.destinationAddress,
-                            amount: transactionPayload.amount,
-                            metadata: transactionPayload.metadata,
-                            isMessage: true
-                        })
-                    }
+                    data.push({
+                        smtProofLocalExitRoot: tx.proof.proof_local_exit_root,
+                        smtProofRollupExitRoot: tx.proof.proof_rollup_exit_root,
+                        globalIndex: transactionPayload.globalIndex.toString(),
+                        originNetwork: transactionPayload.originNetwork,
+                        originAddress: transactionPayload.originTokenAddress,
+                        destinationAddress: transactionPayload.destinationAddress,
+                        amount: transactionPayload.amount,
+                        metadata: transactionPayload.metadata,
+                        isMessage: true
+                    })
                 }
             }
 
@@ -175,11 +179,11 @@ export default class AutoClaimService {
                     !completedTx[tx.transaction.sourceNetwork] ||
                     (
                         completedTx[tx.transaction.sourceNetwork] &&
-                        tx.transaction.counter &&
-                        (completedTx[tx.transaction.sourceNetwork] || 0) < tx.transaction.counter
+                        tx.transaction.depositCount &&
+                        (completedTx[tx.transaction.sourceNetwork] || 0) < tx.transaction.depositCount
                     )
                 ) {
-                    completedTx[tx.transaction.sourceNetwork] = tx.transaction.counter || -1;
+                    completedTx[tx.transaction.sourceNetwork] = tx.transaction.depositCount || -1;
                 }
             }
 
