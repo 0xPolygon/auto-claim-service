@@ -2,7 +2,7 @@ name: Staking API Deploy docker image to GCP
 on:
   push:
     branches: 
-      - batch-claim
+      - hub-batch-claim
   workflow_dispatch:
     inputs:
       tag:
@@ -23,6 +23,6 @@ jobs:
         - generate-version  
     uses: 0xPolygon/pipelines/.github/workflows/gcp_pipeline_release_image.yaml@main    
     with:
-        image_name: "auto-claim"
+        image_name: "auto-claim-hub"
         image_tag: ${{ inputs.tag || needs.generate-version.outputs.version }}
         checkout_ref: ${{ github.ref_name }}
