@@ -25,10 +25,11 @@ export default class TransactionService {
         try {
             let sourceNetworkIds = "";
             JSON.parse(this.sourceNetworks).forEach((networkId: number) => {
-                sourceNetworkIds = `${sourceNetworkIds}&sourceNetworkIds=${networkId}`
+                sourceNetworkIds = `${sourceNetworkIds}${networkId},`
             })
+            sourceNetworkIds = sourceNetworkIds.slice(0, -1);
             let transactionData = await axios.get(
-                `${this.bridgeHubAPIUrl}/transactions?destinationNetworkIds=${this.destinationNetwork}${sourceNetworkIds}&status=READY_TO_CLAIM&pageSize=1000`
+                `${this.bridgeHubAPIUrl}/transactions?destinationNetworkIds=${this.destinationNetwork}&sourceNetworkIds=${sourceNetworkIds}&status=READY_TO_CLAIM&pageSize=1000`
             );
             if (transactionData && transactionData.data && transactionData.data.data) {
                 transactions = transactionData.data.data;
