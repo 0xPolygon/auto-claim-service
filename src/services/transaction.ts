@@ -72,7 +72,7 @@ export default class TransactionService {
             logs = logs.filter(obj => decodeParameters(
                 ["uint8", "uint32", "address", "uint32", "address", "uint256", "bytes", "uint32"],
                 obj.data
-            )[7] === counter.toString())
+            )[7] === BigInt(counter))
             if (logs.length) {
                 let data = decodeParameters(
                     ["uint8", "uint32", "address", "uint32", "address", "uint256", "bytes", "uint32"],
