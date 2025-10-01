@@ -11,7 +11,7 @@ export default class GasStation {
             if (
                 price && price.data
             ) {
-                return (price.data.fast || 0) * (10 ** 9);
+                return (price.data.fast.maxFee || price.data.fast || 0) * (10 ** 9);
             }
             throw new Error("something went wront while calculating gasPrice")
         } catch (error: any) {

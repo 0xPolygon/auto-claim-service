@@ -16,11 +16,6 @@ export default class TransactionService {
     ) { }
 
     async getPendingTransactions(): Promise<any[]> {
-        Logger.info({
-            location: 'TransactionService',
-            function: 'getPendingTransactions',
-            call: 'started'
-        })
         let transactions: any[] = [];
         try {
             let sourceNetworkIds = "";
@@ -39,16 +34,13 @@ export default class TransactionService {
             }
         } catch (error: any) {
             Logger.error({
-                location: 'TransactionService',
-                function: 'getPendingTransactions',
+                location: 'TransactionService.getPendingTransactions',
                 error: error.message
             });
         }
 
         Logger.info({
-            location: 'TransactionService',
-            function: 'getPendingTransactions',
-            call: 'completed',
+            location: 'TransactionService.getPendingTransactions',
             length: transactions.length
         })
         return transactions;
@@ -106,8 +98,7 @@ export default class TransactionService {
             }
         } catch (error: any) {
             Logger.error({
-                location: 'TransactionService',
-                function: 'getProof',
+                location: 'TransactionService.getProof',
                 error: error.message,
                 data: {
                     sourceNetwork,

@@ -2,7 +2,6 @@ import { Logger } from "@polygonlabs/servercore";
 import AutoClaimService from "./services/auto-claim.js";
 import { ethers } from 'ethers';
 import config from "./config/index.js";
-import claimCompressorAbi from "./abi/claim_compressor.js";
 import bridgeAbi from "./abi/bridge.js";
 import SlackNotify from "./services/slack-notify.js";
 import GasStation from "./services/gas-station.js";
@@ -44,11 +43,6 @@ async function start() {
 
         autoClaimService = new AutoClaimService(
             new ethers.Contract(
-                config.CLAIM_COMPRESSOR_CONTRACT as string,
-                claimCompressorAbi,
-                wallet
-            ),
-            new ethers.Contract(
                 config.BRIDGE_CONTRACT as string,
                 bridgeAbi,
                 wallet
@@ -66,7 +60,7 @@ async function start() {
 
         run();
     } catch (error) {
-        // Logger.error({ error });
+        Logger.error({ error });
     }
 };
 

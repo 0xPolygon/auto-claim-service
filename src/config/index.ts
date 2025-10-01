@@ -10,7 +10,6 @@ export default {
     BRIDGE_HUB_API_URL: process.env.BRIDGE_HUB_API_URL,
     RPC_URL: process.env.RPC_URL,
     BRIDGE_CONTRACT: process.env.BRIDGE_CONTRACT,
-    CLAIM_COMPRESSOR_CONTRACT: process.env.CLAIM_COMPRESSOR_CONTRACT,
     GAS_STATION_URL: process.env.GAS_STATION_URL,
     SLACK_URL: process.env.SLACK_URL,
     NETWORK: process.env.NETWORK,
