@@ -147,10 +147,10 @@ export default class AutoClaimService {
             let transactions = await this.transactionService.getPendingTransactions();
 
             for (const transaction of transactions) {
-                if (!transaction.leafIndex) {
+                if (!transaction.leafIndexForProof) {
                     continue;
                 }
-                const proof = await this.transactionService.getProof(transaction.sourceNetwork, transaction.depositCount, transaction.leafIndex)
+                const proof = await this.transactionService.getProof(transaction.sourceNetwork, transaction.depositCount, transaction.leafIndexForProof)
                 const globalIndex = transaction.globalIndex ?? this.computeGlobalIndex(transaction.depositCount as number, transaction.sourceNetwork);
                 if (proof) {
                     await this.sendTransaction(transaction, proof, globalIndex);
