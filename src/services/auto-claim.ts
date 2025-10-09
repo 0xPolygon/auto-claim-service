@@ -123,7 +123,10 @@ export default class AutoClaimService {
                 completedTx[transaction.sourceNetwork] &&
                 completedTx[transaction.sourceNetwork] > transaction.depositCount
             ) {
-                Logger.error(error?.message || error);
+                Logger.error({
+                    location: 'AutoClaimService.slackNotify',
+                    error: error?.message || error
+                })
                 await this.slackNotify.notifyAdminForError({
                     claimType: transaction.leafType,
                     bridgeTxHash: transaction.transactionHash,

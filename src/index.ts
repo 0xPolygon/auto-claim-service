@@ -81,7 +81,7 @@ async function start() {
 
         run();
     } catch (error) {
-        Logger.error({ error });
+        Logger.error({ location: "index.start", error });
     }
 };
 
