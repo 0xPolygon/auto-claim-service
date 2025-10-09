@@ -54,13 +54,9 @@ function createEthersClients(): { [key: string]: ethers.JsonRpcProvider } {
 
 async function start() {
     try {
-        console.log("start")
         const provider = new ethers.JsonRpcProvider(createFetchRequest(process.env.DESTINATION_NETWORK_CHAINID as string));
-        console.log("provider initialized")
         const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as string, provider);
-        console.log("wallet initialized")
         const ethersClients = createEthersClients();
-        console.log("ether client initialized")
 
         const bridgeContract = new ethers.Contract(
             process.env.BRIDGE_CONTRACT as string,
@@ -68,7 +64,6 @@ async function start() {
             wallet
         );
 
-        console.log("bridge contract initialized")
         const transactionService = new TransactionService(
             process.env.BRIDGE_HUB_API_URL as string,
             process.env.SOURCE_NETWORKS as string,
@@ -76,7 +71,6 @@ async function start() {
             ethersClients
         );
 
-        console.log("transaction service initialized")
         autoClaimService = new AutoClaimService(
             bridgeContract,
             transactionService,
@@ -85,11 +79,8 @@ async function start() {
             process.env.SLACK_URL ? new SlackNotify(process.env.SLACK_URL) : null
         );
 
-        console.log("auto claim service initialized")
-
         run();
     } catch (error) {
-        console.log(error)
         Logger.error({ location: "index.start", error });
     }
 };
