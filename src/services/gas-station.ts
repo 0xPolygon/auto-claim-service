@@ -7,6 +7,9 @@ export default class GasStation {
 
     async getGasPrice(): Promise<number> {
         try {
+            if (!this.gasStationUrl) {
+                return 10000000000;
+            }
             let price = await axios.get(`${this.gasStationUrl}`);
             if (
                 price && price.data
