@@ -17,21 +17,33 @@ export default class TransactionService {
 
     async getPendingTransactions(): Promise<any[]> {
         let transactions: any[] = [];
+        let startAfter = undefined;
+        let hasNext = true;
+        let sourceNetworkIds = "";
+        JSON.parse(this.sourceNetworks).forEach((networkId: number) => {
+            sourceNetworkIds = `${sourceNetworkIds}${networkId},`
+        })
+        sourceNetworkIds = sourceNetworkIds.slice(0, -1);
+
         try {
-            let sourceNetworkIds = "";
-            JSON.parse(this.sourceNetworks).forEach((networkId: number) => {
-                sourceNetworkIds = `${sourceNetworkIds}${networkId},`
-            })
-            sourceNetworkIds = sourceNetworkIds.slice(0, -1);
-            let transactionData = await axios.get(
-                `${this.bridgeHubAPIUrl}/transactions?destinationNetworkIds=${this.destinationNetwork}&sourceNetworkIds=${sourceNetworkIds}&status=READY_TO_CLAIM&pageSize=1000`
-            );
-            if (transactionData && transactionData.data && transactionData.data.data) {
-                transactions = transactionData.data.data;
-                transactions = transactions.filter(obj => !(
-                    obj.leafType === 'MESSAGE' && obj.amount === '0'
-                ))
+            while (hasNext) {
+                let transactionData: any = await axios.get(
+                    `${this.bridgeHubAPIUrl}/transactions?destinationNetworkIds=${this.destinationNetwork}&sourceNetworkIds=${sourceNetworkIds}&status=READY_TO_CLAIM&limit=50&startAfter=${startAfter}`
+                );
+                if (transactionData && transactionData.data && transactionData.data.data) {
+                    transactions = [...transactions, ...transactionData.data.data];
+                    transactions = transactions.filter(obj => !(
+                        obj.leafType === 'MESSAGE' && obj.amount === '0'
+                    ));
+
+                    startAfter = transactionData.data.pagination.nextStartAfterCursor
+                    if (!startAfter) {
+                        hasNext = false;
+                    }
+
+                }
             }
+
         } catch (error: any) {
             Logger.error({
                 location: 'TransactionService.getPendingTransactions',
