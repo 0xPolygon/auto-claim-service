@@ -1,5 +1,13 @@
 # Auto Claim Service
 
+> ⚠️ **Deprecated — this repository has moved.**
+>
+> The auto-claim service now lives in
+> **[`AggLayer/agglayer-bridge-hub-api`](https://github.com/AggLayer/agglayer-bridge-hub-api)**
+> under [`packages/auto-claim`](https://github.com/AggLayer/agglayer-bridge-hub-api/tree/main/packages/auto-claim)
+> (published as `bridge-hub-auto-claim`). This repository is unmaintained and will be
+> archived — please open issues and pull requests against `agglayer-bridge-hub-api` instead.
+
 ## Introduction
 
 Autoclaim Script is a cron job service which is used to process the claim transactions for the bridge transactions initiated on the lxly bridge. Bridging involves two steps. 1st Step is done on the source chain and the second on the destination chain. The script automates the second step so that users don't have to manually execute this second step. It fetches the transaction details from the transaction list endpoint of the Bridge API service, gets the merkle proof payload for each bridge transaction and then submits the claim transaction on the destination chain. 
